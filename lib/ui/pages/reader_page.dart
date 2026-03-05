@@ -49,9 +49,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         _router.routerDelegate.currentConfiguration.last.matchedLocation;
     if (location == '/reader') {
       _startNfc();
-      if (!_cameraController.value.isInitialized) {
-        _cameraController.start();
-      }
+      _cameraController.start();
     } else {
       _stopNfc();
       _cameraController.stop();
@@ -65,9 +63,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           _router.routerDelegate.currentConfiguration.last.matchedLocation;
       if (location == '/reader') {
         _startNfc();
+        _cameraController.start();
       }
     } else if (state == AppLifecycleState.paused) {
       _stopNfc();
+      _cameraController.stop();
     }
   }
 
@@ -209,136 +209,405 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     }
   }
 
+  IconData _getIconData(String iconName) {
+    switch (iconName.toLowerCase()) {
+      case 'home':
+        return Icons.home;
+      case 'work':
+        return Icons.work;
+      case 'cloud':
+        return Icons.cloud;
+      case 'computer':
+        return Icons.computer;
+      case 'api':
+        return Icons.api;
+      case 'webhook':
+        return Icons.webhook;
+      default:
+        return Icons.dns;
+    }
+  }
+
+  void _showInstanceSelectionDialog() {
+    final instances = ref.read(instancesProvider);
+    final activeId = ref.read(activeInstanceIdProvider);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Active Instance'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: instances.isEmpty
+                ? const Text(
+                    'No instances configured. Add them in the Instances tab.',
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: instances.length,
+                    itemBuilder: (context, index) {
+                      final instance = instances[index];
+                      final isActive = instance.id == activeId;
+                      return ListTile(
+                        leading: Icon(_getIconData(instance.icon)),
+                        title: Text(instance.name),
+                        subtitle: Text(
+                          instance.url,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: isActive
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                              )
+                            : null,
+                        onTap: () {
+                          ref
+                              .read(activeInstanceIdProvider.notifier)
+                              .setActiveId(instance.id);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
+                Navigator.pop(context);
+              },
+              child: const Text('Clear Active'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeInstance = ref.watch(activeInstanceProvider);
+    final savedCards = ref.watch(savedCardsProvider).reversed.take(5).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scan Card'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(40),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: activeInstance != null
-                ? Colors.green.withOpacity(0.2)
-                : Colors.orange.withOpacity(0.2),
-            child: Text(
-              activeInstance != null
-                  ? 'Active Instance: ${activeInstance.name}'
-                  : 'No active instance selected',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          // QR Scanner Background
-          MobileScanner(
-            controller: _cameraController,
-            onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                if (barcode.rawValue != null) {
-                  _handleReadData('QR', barcode.rawValue!);
-                  break; // handle first valid
-                }
-              }
-            },
-          ),
-          // Gradient Overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                ],
-              ),
-            ),
-          ),
-          // Top section message
-          Positioned(
-            top: 40,
-            left: 0,
-            right: 0,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Text(
-                _isProcessing ? 'Processing...' : 'Point camera at QR Code',
-                key: ValueKey(_isProcessing),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          // NFC Status Bottom Sheet style
-          Positioned(
-            bottom: 30,
-            left: 20,
-            right: 20,
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _isNfcScanning
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : Colors.grey.shade300,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
+      appBar: AppBar(title: const Text('NFC & QR Reader')),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. NFC Status Pill
+              Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isNfcScanning
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
                         Icons.nfc,
                         color: _isNfcScanning
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade600,
-                        size: 32,
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        size: 20,
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'NFC Sensor',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                      const SizedBox(width: 8),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Text(
+                          _nfcStatus,
+                          key: ValueKey(_nfcStatus),
+                          style: TextStyle(
+                            color: _isNfcScanning
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 4),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: Text(
-                              _nfcStatus,
-                              key: ValueKey(_nfcStatus),
-                              style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 2. QR Scanner Window
+              Container(
+                height: 240,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Placeholder icon while camera is loading or inactive
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.qr_code_scanner,
+                            size: 64,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Camera Loading/Paused',
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.5),
                             ),
                           ),
                         ],
                       ),
                     ),
+                    MobileScanner(
+                      controller: _cameraController,
+                      onDetect: (capture) {
+                        final List<Barcode> barcodes = capture.barcodes;
+                        for (final barcode in barcodes) {
+                          if (barcode.rawValue != null) {
+                            _handleReadData('QR', barcode.rawValue!);
+                            break;
+                          }
+                        }
+                      },
+                    ),
+                    if (_isProcessing)
+                      Container(
+                        color: Colors.black54,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                    // Optional target overlay
+                    Center(
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white54, width: 2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              const Center(
+                child: Text(
+                  'Point camera at QR Code',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 3. Selected Instance Card
+              InkWell(
+                onTap: _showInstanceSelectionDialog,
+                borderRadius: BorderRadius.circular(16),
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  color: activeInstance != null
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.errorContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: activeInstance != null
+                        ? Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer
+                                    .withValues(alpha: 0.1),
+                                child: Icon(
+                                  _getIconData(activeInstance.icon),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      activeInstance.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimaryContainer,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      activeInstance.url,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                                .withValues(alpha: 0.8),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer
+                                    .withValues(alpha: 0.1),
+                                child: Icon(
+                                  Icons.warning,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'No active instance selected.\nTap to select.',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // 4. History
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'History',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  TextButton(
+                    onPressed: () => context.go('/history'),
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+              const Divider(),
+
+              if (savedCards.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(child: Text('No recent scans.')),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: savedCards.length,
+                  itemBuilder: (context, index) {
+                    final card = savedCards[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.secondaryContainer,
+                        child: Icon(
+                          card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSecondaryContainer,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        card.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text('${card.type} • ${card.value}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.send, size: 20),
+                        onPressed: _isProcessing
+                            ? null
+                            : () => _handleReadData(card.type, card.value),
+                        tooltip: 'Resend to active instance',
+                      ),
+                    );
+                  },
+                ),
+
+              const SizedBox(height: 40),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
