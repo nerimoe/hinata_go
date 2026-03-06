@@ -27,12 +27,12 @@ class ScaffoldWithNavBar extends StatelessWidget {
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.nfc), label: 'Reader'),
                 NavigationDestination(
-                  icon: Icon(Icons.history),
-                  label: 'History',
+                  icon: Icon(Icons.credit_card),
+                  label: 'Cards',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.dns),
-                  label: 'Instances',
+                  icon: Icon(Icons.settings),
+                  label: 'Settings',
                 ),
               ],
             ),
@@ -52,12 +52,12 @@ class ScaffoldWithNavBar extends StatelessWidget {
                       label: Text('Reader'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.history),
-                      label: Text('History'),
+                      icon: Icon(Icons.credit_card),
+                      label: Text('Cards'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.dns),
-                      label: Text('Instances'),
+                      icon: Icon(Icons.settings),
+                      label: Text('Settings'),
                     ),
                   ],
                 ),

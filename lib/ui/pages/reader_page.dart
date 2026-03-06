@@ -6,8 +6,10 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:sega_nfc/services/nfc_service.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/saved_card.dart';
+import '../../models/scan_log.dart';
+import '../../models/bag_card.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
@@ -46,9 +48,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   void _routeListener() {
     final location =
         _router.routerDelegate.currentConfiguration.last.matchedLocation;
+    final enableCamera = ref.read(settingsProvider).enableCamera;
+
     if (location == '/reader') {
       _startNfc();
-      _cameraController.start();
+      if (enableCamera) _cameraController.start();
     } else {
       _stopNfc();
       _cameraController.stop();
@@ -60,9 +64,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     if (state == AppLifecycleState.resumed) {
       final location =
           _router.routerDelegate.currentConfiguration.last.matchedLocation;
+      final enableCamera = ref.read(settingsProvider).enableCamera;
+
       if (location == '/reader') {
         _startNfc();
-        _cameraController.start();
+        if (enableCamera) _cameraController.start();
       }
     } else if (state == AppLifecycleState.paused) {
       _stopNfc();
@@ -99,13 +105,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       });
 
       await NfcManager.instance.startSession(
+        noPlatformSoundsAndroid: true,
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
         onDiscovered: (NfcTag tag) async {
           final result = await handleNfcTag(tag);
           if (result != null) {
             final (type, value) = result;
             if (type != 'Unknown' && value.isNotEmpty) {
-              _handleReadData(type, value);
+              _handleReadData(source: 'NFC', value: value, nfcType: type);
             }
           }
         },
@@ -133,8 +140,42 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     }
   }
 
-  Future<void> _handleReadData(String type, String value) async {
+  Future<void> _handleReadData({
+    required String source,
+    required String value,
+    String? nfcType,
+  }) async {
     if (_isProcessing) return;
+    final enableSecondaryConfirmation = ref
+        .read(settingsProvider)
+        .enableSecondaryConfirmation;
+
+    if (enableSecondaryConfirmation) {
+      final shouldSend = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Confirm Send'),
+            content: Text(
+              'Are you sure you want to send this ${nfcType ?? source} card?\nValue: $value',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Send'),
+              ),
+            ],
+          );
+        },
+      );
+      if (!mounted) return;
+      if (shouldSend != true) return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
@@ -142,14 +183,26 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     final activeInstance = ref.read(activeInstanceProvider);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-    // Save to history automatically
-    final newCard = SavedCard(
+    // Save to history automatically as a ScanLog
+    final newLog = ScanLog(
       id: const Uuid().v4(),
-      name: '$type Scanned Card',
-      type: type,
       value: value,
+      source: source,
+      nfcType: nfcType,
+      timestamp: DateTime.now(),
     );
-    ref.read(savedCardsProvider.notifier).addCard(newCard);
+    ref.read(scanLogsProvider.notifier).addLog(newLog);
+
+    // Also auto-save to the 'History' folder in the Card Bag
+    final newCard = BagCard(
+      id: const Uuid().v4(),
+      name: source == 'NFC'
+          ? (nfcType ?? 'NFC Card')
+          : (source == 'QR' ? 'QR Code' : 'Card'),
+      value: value,
+      folderId: 'history_folder',
+    );
+    ref.read(bagCardsProvider.notifier).addCard(newCard);
 
     if (activeInstance == null) {
       scaffoldMessenger.showSnackBar(
@@ -165,9 +218,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       final apiService = ref.read(apiServiceProvider);
       final success = await apiService.sendCardData(
         instance: activeInstance,
-        type: type,
+        type: nfcType ?? source,
         value: value,
       );
+
+      if (!mounted) return;
 
       if (success) {
         scaffoldMessenger.showSnackBar(
@@ -207,68 +262,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     }
   }
 
-  void _showInstanceSelectionDialog() {
-    final instances = ref.read(instancesProvider);
-    final activeId = ref.read(activeInstanceIdProvider);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Select Active Instance'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: instances.isEmpty
-                ? const Text(
-                    'No instances configured. Add them in the Instances tab.',
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: instances.length,
-                    itemBuilder: (context, index) {
-                      final instance = instances[index];
-                      final isActive = instance.id == activeId;
-                      return ListTile(
-                        leading: Icon(_getIconData(instance.icon)),
-                        title: Text(instance.name),
-                        subtitle: Text(
-                          instance.url,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: isActive
-                            ? const Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                              )
-                            : null,
-                        onTap: () {
-                          ref
-                              .read(activeInstanceIdProvider.notifier)
-                              .setActiveId(instance.id);
-                          Navigator.pop(context);
-                        },
-                      );
-                    },
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
-                Navigator.pop(context);
-              },
-              child: const Text('Clear Active'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Removed _showInstanceSelectionDialog as it is now handled by InstancesPage
 
   // ---------------------------------------------------------------------------
   // Builder methods — extracted from build() to flatten nesting
@@ -354,7 +348,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             onDetect: (capture) {
               for (final barcode in capture.barcodes) {
                 if (barcode.rawValue != null) {
-                  _handleReadData('QR', barcode.rawValue!);
+                  _handleReadData(source: 'QR', value: barcode.rawValue!);
                   break;
                 }
               }
@@ -425,7 +419,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   Widget _buildInstanceCard(dynamic activeInstance) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: _showInstanceSelectionDialog,
+      onTap: () => context.push('/instances'),
       borderRadius: BorderRadius.circular(16),
       child: Card(
         margin: EdgeInsets.zero,
@@ -507,22 +501,22 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   }
 
   /// History header + recent scans list.
-  Widget _buildHistorySection(List<SavedCard> savedCards) {
+  Widget _buildHistorySection(List<ScanLog> scanLogs) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('History', style: Theme.of(context).textTheme.titleLarge),
+            Text('Recent Scans', style: Theme.of(context).textTheme.titleLarge),
             TextButton(
-              onPressed: () => context.go('/history'),
-              child: const Text('View All'),
+              onPressed: () => context.push('/scan_logs'),
+              child: const Text('View All Logs'),
             ),
           ],
         ),
         const Divider(),
-        if (savedCards.isEmpty)
+        if (scanLogs.isEmpty)
           const Padding(
             padding: EdgeInsets.all(32.0),
             child: Center(child: Text('No recent scans.')),
@@ -531,37 +525,56 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: savedCards.length,
-            itemBuilder: (context, index) =>
-                _buildHistoryItem(savedCards[index]),
+            itemCount: scanLogs.length,
+            itemBuilder: (context, index) => _buildHistoryItem(scanLogs[index]),
           ),
       ],
     );
   }
 
   /// A single history list item.
-  Widget _buildHistoryItem(SavedCard card) {
+  Widget _buildHistoryItem(ScanLog log) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    String displaySource = log.source;
+    if (log.source == 'NFC') {
+      if (log.nfcType != null && log.nfcType != 'NFC') {
+        displaySource = 'NFC (${log.nfcType})';
+      }
+    } else if (log.source == 'Direct') {
+      displaySource = 'Card Bag';
+    }
+
+    IconData sourceIcon = Icons.qr_code;
+    if (log.source == 'NFC') sourceIcon = Icons.nfc;
+    if (log.source == 'Direct') sourceIcon = Icons.credit_card;
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
         backgroundColor: colorScheme.secondaryContainer,
         child: Icon(
-          card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
+          sourceIcon,
           color: colorScheme.onSecondaryContainer,
           size: 20,
         ),
       ),
       title: Text(
-        card.name,
+        log.value,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: Text('${card.type} • ${card.value}'),
+      subtitle: Text(
+        '$displaySource • ${log.timestamp.toString().substring(5, 16)}',
+      ),
       trailing: IconButton(
         icon: const Icon(Icons.send, size: 20),
         onPressed: _isProcessing
             ? null
-            : () => _handleReadData(card.type, card.value),
+            : () => _handleReadData(
+                source: log.source,
+                value: log.value,
+                nfcType: log.nfcType,
+              ),
         tooltip: 'Resend to active instance',
       ),
     );
@@ -574,7 +587,22 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   @override
   Widget build(BuildContext context) {
     final activeInstance = ref.watch(activeInstanceProvider);
-    final savedCards = ref.watch(savedCardsProvider).reversed.take(5).toList();
+    final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
+
+    // We must rebuild when the setting changes to stop/start camera dynamically
+    final enableCamera = ref.watch(settingsProvider).enableCamera;
+
+    // Stop or start the camera based on settings immediately upon build if on Reader page
+    // Since we are in build, we use post-frame callback or let route listener handle it,
+    // but just checking the flag is enough to hide it. To actually stop the hardware:
+    if (!enableCamera && _cameraController.value.isRunning) {
+      _cameraController.stop();
+    } else if (enableCamera &&
+        !_cameraController.value.isRunning &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      // Start only if currently visible
+      _cameraController.start();
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -583,7 +611,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           ValueListenableBuilder<MobileScannerState>(
             valueListenable: _cameraController,
             builder: (context, state, child) {
-              if (!state.isInitialized || !state.isRunning) {
+              if (!state.isInitialized || !state.isRunning || !enableCamera) {
                 return const SizedBox.shrink();
               }
               return IconButton(
@@ -601,19 +629,21 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildNfcStatusPill(),
-              const SizedBox(height: 16),
-              _buildQrScanner(),
-              const SizedBox(height: 8),
-              const Center(
-                child: Text(
-                  'Point camera at QR Code',
-                  style: TextStyle(color: Colors.grey),
+              if (enableCamera) ...[
+                const SizedBox(height: 16),
+                _buildQrScanner(),
+                const SizedBox(height: 8),
+                const Center(
+                  child: Text(
+                    'Point camera at QR Code',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 24),
               _buildInstanceCard(activeInstance),
               const SizedBox(height: 32),
-              _buildHistorySection(savedCards),
+              _buildHistorySection(scanLogs),
               const SizedBox(height: 40),
             ],
           ),

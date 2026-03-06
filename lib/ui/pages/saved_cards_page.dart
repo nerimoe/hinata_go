@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/saved_card.dart';
+import '../../models/bag_card.dart';
+import '../../models/card_folder.dart';
+import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
 
 class SavedCardsPage extends ConsumerStatefulWidget {
@@ -15,11 +18,17 @@ class SavedCardsPage extends ConsumerStatefulWidget {
 
 class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   bool _isProcessing = false;
+  String _selectedFolderId = 'history_folder'; // Default folder
 
   void _showAddCardDialog() {
+    if (_selectedFolderId == 'history_folder') return;
+
     final nameController = TextEditingController();
     final valueController = TextEditingController();
-    String selectedType = 'Manual';
+    final folders = ref
+        .read(cardFoldersProvider)
+        .where((f) => f.id != 'history_folder')
+        .toList();
 
     showDialog(
       context: context,
@@ -39,15 +48,30 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    initialValue: selectedType,
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: ['Manual', 'NfcA', 'NfcF', 'QR'].map((type) {
-                      return DropdownMenuItem(value: type, child: Text(type));
-                    }).toList(),
+                    value: _selectedFolderId,
+                    decoration: const InputDecoration(labelText: 'Folder'),
+                    items: [
+                      ...folders.map((folder) {
+                        return DropdownMenuItem(
+                          value: folder.id,
+                          child: Text(folder.name),
+                        );
+                      }),
+                      const DropdownMenuItem(
+                        value: 'CREATE_NEW',
+                        child: Text(
+                          '+ New Folder',
+                          style: TextStyle(color: Colors.blue),
+                        ),
+                      ),
+                    ],
                     onChanged: (val) {
-                      if (val != null) {
+                      if (val == 'CREATE_NEW') {
+                        Navigator.pop(context);
+                        _showAddFolderDialog();
+                      } else if (val != null) {
                         setState(() {
-                          selectedType = val;
+                          _selectedFolderId = val;
                         });
                       }
                     },
@@ -70,13 +94,13 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                   onPressed: () {
                     if (nameController.text.isNotEmpty &&
                         valueController.text.isNotEmpty) {
-                      final newCard = SavedCard(
+                      final newCard = BagCard(
                         id: const Uuid().v4(),
                         name: nameController.text,
-                        type: selectedType,
                         value: valueController.text,
+                        folderId: _selectedFolderId,
                       );
-                      ref.read(savedCardsProvider.notifier).addCard(newCard);
+                      ref.read(bagCardsProvider.notifier).addCard(newCard);
                       Navigator.pop(context);
                     }
                   },
@@ -90,8 +114,86 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     );
   }
 
-  Future<void> _sendCardData(SavedCard card) async {
+  void _showAddFolderDialog() {
+    final nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('New Folder'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: 'Folder Name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty) {
+                  final newFolder = CardFolder(
+                    id: const Uuid().v4(),
+                    name: nameController.text,
+                  );
+                  ref.read(cardFoldersProvider.notifier).addFolder(newFolder);
+                  setState(() {
+                    _selectedFolderId = newFolder.id;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _sendCardData(BagCard card) async {
     if (_isProcessing) return;
+
+    // Create ScanLog for Direct send
+    final newLog = ScanLog(
+      id: const Uuid().v4(),
+      value: card.value,
+      source: 'Direct',
+      timestamp: DateTime.now(),
+    );
+    ref.read(scanLogsProvider.notifier).addLog(newLog);
+
+    final enableSecondaryConfirmation = ref
+        .read(settingsProvider)
+        .enableSecondaryConfirmation;
+    if (enableSecondaryConfirmation) {
+      final shouldSend = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Confirm Send'),
+            content: Text(
+              'Are you sure you want to send this card?\nValue: ${card.value}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Send'),
+              ),
+            ],
+          );
+        },
+      );
+      if (!mounted) return;
+      if (shouldSend != true) return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
@@ -115,11 +217,14 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       );
 
       final apiService = ref.read(apiServiceProvider);
+      // We default to 'Direct' or similar since type is removed from BagCard
       final success = await apiService.sendCardData(
         instance: activeInstance,
-        type: card.type,
+        type: 'Direct',
         value: card.value,
       );
+
+      if (!mounted) return;
 
       if (success) {
         scaffoldMessenger.showSnackBar(
@@ -134,8 +239,15 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
 
     if (mounted) {
       setState(() {
-        _isProcessing = false;
+        _isProcessing = true;
       });
+      // Delay slightly to show processing state and prevent spam
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
 
@@ -143,7 +255,6 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   // Builder methods
   // ---------------------------------------------------------------------------
 
-  /// Swipe-to-delete background.
   Widget _buildDismissBackground() {
     return Container(
       color: Colors.red,
@@ -153,8 +264,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     );
   }
 
-  /// A single saved-card list item with dismiss and send actions.
-  Widget _buildCardItem(SavedCard card) {
+  Widget _buildCardItem(BagCard card) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
@@ -162,23 +272,24 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       direction: DismissDirection.endToStart,
       background: _buildDismissBackground(),
       onDismissed: (_) {
-        ref.read(savedCardsProvider.notifier).removeCard(card.id);
+        ref.read(bagCardsProvider.notifier).removeCard(card.id);
       },
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: colorScheme.primaryContainer,
-          child: Icon(
-            card.type.contains('Nfc') ? Icons.nfc : Icons.qr_code,
-            color: colorScheme.primary,
-          ),
+          child: Icon(Icons.credit_card, color: colorScheme.primary),
         ),
         title: Text(
           card.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('${card.type} • ${card.value}'),
+        subtitle: Text('Value: ${card.value}'),
         trailing: _isProcessing
-            ? const CircularProgressIndicator()
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             : IconButton(
                 icon: const Icon(Icons.send),
                 onPressed: () => _sendCardData(card),
@@ -195,23 +306,112 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final savedCards = ref.watch(savedCardsProvider);
-    final reversedCards = savedCards.reversed.toList();
+    final folders = ref.watch(cardFoldersProvider);
+    final allCards = ref.watch(bagCardsProvider);
+    final folderCards = allCards
+        .where((c) => c.folderId == _selectedFolderId)
+        .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved Cards & History')),
-      body: reversedCards.isEmpty
-          ? const Center(child: Text('No saved cards yet.'))
-          : ListView.builder(
-              itemCount: reversedCards.length,
-              itemBuilder: (context, index) =>
-                  _buildCardItem(reversedCards[index]),
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddCardDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Card'),
+      appBar: AppBar(
+        title: const Text('Card Bag'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.create_new_folder),
+            onPressed: _showAddFolderDialog,
+            tooltip: 'New Folder',
+          ),
+        ],
       ),
+      body: Column(
+        children: [
+          // Folder Selection Strip
+          SizedBox(
+            height: 60,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: folders.length,
+              itemBuilder: (context, index) {
+                final folder = folders[index];
+                final isSelected = folder.id == _selectedFolderId;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: GestureDetector(
+                    onLongPress: () {
+                      if (folder.id == 'history_folder' ||
+                          folder.id == 'favorites_folder') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Cannot delete default folders.'),
+                          ),
+                        );
+                        return;
+                      }
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Delete Folder?'),
+                          content: Text(
+                            'Are you sure you want to delete "${folder.name}" and all cards inside it?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                ref
+                                    .read(cardFoldersProvider.notifier)
+                                    .removeFolder(folder.id);
+                                setState(() {
+                                  _selectedFolderId = 'history_folder';
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: FilterChip(
+                      label: Text(folder.name),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _selectedFolderId = folder.id;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          // Cards List
+          Expanded(
+            child: folderCards.isEmpty
+                ? const Center(child: Text('No cards in this folder.'))
+                : ListView.builder(
+                    itemCount: folderCards.length,
+                    itemBuilder: (context, index) =>
+                        _buildCardItem(folderCards[index]),
+                  ),
+          ),
+        ],
+      ),
+      floatingActionButton: _selectedFolderId == 'history_folder'
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _showAddCardDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Card'),
+            ),
     );
   }
 }
