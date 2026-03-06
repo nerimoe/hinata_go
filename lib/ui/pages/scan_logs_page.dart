@@ -83,7 +83,11 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                         id: const Uuid().v4(),
                         name: nameController.text,
                         value: log.value,
+                        showValue: log.showValue,
                         folderId: selectedFolderId,
+                        source: log.source,
+                        apiType: log.apiType,
+                        displayType: log.displayType,
                       );
                       ref.read(bagCardsProvider.notifier).addCard(newCard);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -132,8 +136,8 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                 final log = reversedLogs[index];
                 String displaySource = log.source;
                 if (log.source == 'NFC') {
-                  if (log.nfcType != null && log.nfcType != 'NFC') {
-                    displaySource = 'NFC (${log.nfcType})';
+                  if (log.apiType != 'nfc') {
+                    displaySource = 'NFC (${log.displayType})';
                   }
                 } else if (log.source == 'Direct') {
                   displaySource = 'Card Bag';
@@ -154,7 +158,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
                     ),
                   ),
                   title: Text(
-                    log.value,
+                    log.showValue,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(

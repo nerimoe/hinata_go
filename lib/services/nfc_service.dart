@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/nfc_manager_android.dart';
 import '../constants/mifare_key.dart';
+import '../models/parsed_card.dart';
 import '../utils/spad0.dart';
 
 String _toHexString(Uint8List bytes) {
@@ -16,7 +17,7 @@ String _extractAccessCode(Uint8List slice) {
   return _toHexString(slice);
 }
 
-Future<(String type, String value)?> handleNfcTag(NfcTag tag) async {
+Future<ParsedCard?> handleNfcTag(NfcTag tag) async {
   // Try Felica
   final nfcf = NfcFAndroid.from(tag);
   if (nfcf != null) {
@@ -33,7 +34,13 @@ Future<(String type, String value)?> handleNfcTag(NfcTag tag) async {
   final androidTag = NfcTagAndroid.from(tag);
   final idArray = androidTag?.id ?? Uint8List(0);
   final uid = _toHexString(idArray);
-  return ('Unknown', uid);
+  return ParsedCard(
+    value: uid,
+    showValue: uid,
+    source: 'NFC',
+    apiType: 'nfc',
+    displayType: 'NFC',
+  );
 }
 
 Future<Uint8List> _felicaReadWithoutEncryption(
@@ -74,9 +81,15 @@ bool _mayAic(Uint8List idm, Uint8List pmm) {
       pmm[7] == 0x00;
 }
 
-Future<(String, String)> _handleFelica(NfcFAndroid nfcf) async {
+Future<ParsedCard> _handleFelica(NfcFAndroid nfcf) async {
   final idm = nfcf.tag.id;
-  final defaultReturn = ('Felica', _toHexString(idm));
+  final defaultReturn = ParsedCard(
+    value: _toHexString(idm),
+    showValue: _toHexString(idm),
+    source: 'NFC',
+    apiType: 'felica',
+    displayType: 'Felica',
+  );
 
   // 1. Quick filter: only process if IDm starts with 0x00 or 0x01
   if ((idm[0] & 0xF0) != 0x00) {
@@ -138,7 +151,13 @@ Future<(String, String)> _handleFelica(NfcFAndroid nfcf) async {
     // Checking high 4 bits of 7th byte for 0x50 (AIC_HEADER_VALID)
     if (isZeros && (dec[6] & 0xF0) == 0x50) {
       final accessCodeBytes = dec.sublist(6, 16);
-      return ('Amusement IC', _extractAccessCode(accessCodeBytes));
+      return ParsedCard(
+        value: '${_toHexString(idm)}:${_extractAccessCode(accessCodeBytes)}',
+        showValue: _extractAccessCode(accessCodeBytes),
+        source: 'NFC',
+        apiType: 'aic',
+        displayType: 'Amusement IC',
+      );
     }
   } catch (e) {
     // Ignore and fallback to generic Felica
@@ -147,9 +166,7 @@ Future<(String, String)> _handleFelica(NfcFAndroid nfcf) async {
   return defaultReturn;
 }
 
-Future<(String, String)> _handleMifareClassic(
-  MifareClassicAndroid mifare,
-) async {
+Future<ParsedCard> _handleMifareClassic(MifareClassicAndroid mifare) async {
   final uid = _toHexString(mifare.tag.id);
 
   try {
@@ -167,7 +184,13 @@ Future<(String, String)> _handleMifareClassic(
         data.add(block1);
         data.add(block2);
 
-        return ('Banapass', _toHexString(data.toBytes()));
+        return ParsedCard(
+          value: _toHexString(data.toBytes()),
+          showValue: _toHexString(data.toBytes()),
+          source: 'NFC',
+          apiType: 'mifare',
+          displayType: 'Banapass',
+        );
       }
     } catch (_) {}
 
@@ -181,7 +204,13 @@ Future<(String, String)> _handleMifareClassic(
         final block2 = await mifare.readBlock(blockIndex: 2);
         if (block2.length >= 16) {
           final accessCodeBytes = block2.sublist(6, 16);
-          return ('Aime', _extractAccessCode(accessCodeBytes));
+          return ParsedCard(
+            value: _extractAccessCode(accessCodeBytes),
+            showValue: _extractAccessCode(accessCodeBytes),
+            source: 'NFC',
+            apiType: 'aime',
+            displayType: 'Aime',
+          );
         }
       }
     } catch (_) {}
@@ -189,5 +218,11 @@ Future<(String, String)> _handleMifareClassic(
     // Fallback to uid
   }
 
-  return ('Mifare Classic', uid);
+  return ParsedCard(
+    value: uid,
+    showValue: uid,
+    source: 'NFC',
+    apiType: 'mifare',
+    displayType: 'Mifare Classic',
+  );
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/remote_instance.dart';
@@ -14,6 +15,7 @@ class ApiService {
     required String value,
   }) async {
     try {
+      log(jsonEncode({'type': type, 'value': value}));
       final response = await http.post(
         Uri.parse(instance.url),
         headers: {'Content-Type': 'application/json'},

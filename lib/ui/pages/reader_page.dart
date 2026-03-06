@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/scan_log.dart';
 import '../../models/bag_card.dart';
+import '../../models/parsed_card.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
@@ -108,11 +109,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         noPlatformSoundsAndroid: true,
         pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
         onDiscovered: (NfcTag tag) async {
-          final result = await handleNfcTag(tag);
-          if (result != null) {
-            final (type, value) = result;
-            if (type != 'Unknown' && value.isNotEmpty) {
-              _handleReadData(source: 'NFC', value: value, nfcType: type);
+          final parsedCard = await handleNfcTag(tag);
+          if (parsedCard != null) {
+            if (parsedCard.apiType != 'Unknown' &&
+                parsedCard.value.isNotEmpty) {
+              _handleReadData(parsedCard);
             }
           }
         },
@@ -140,11 +141,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     }
   }
 
-  Future<void> _handleReadData({
-    required String source,
-    required String value,
-    String? nfcType,
-  }) async {
+  Future<void> _handleReadData(ParsedCard card) async {
     if (_isProcessing) return;
     final enableSecondaryConfirmation = ref
         .read(settingsProvider)
@@ -157,7 +154,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           return AlertDialog(
             title: const Text('Confirm Send'),
             content: Text(
-              'Are you sure you want to send this ${nfcType ?? source} card?\nValue: $value',
+              'Are you sure you want to send this ${card.displayType} card?\nValue: ${card.value}',
             ),
             actions: [
               TextButton(
@@ -186,9 +183,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     // Save to history automatically as a ScanLog
     final newLog = ScanLog(
       id: const Uuid().v4(),
-      value: value,
-      source: source,
-      nfcType: nfcType,
+      value: card.value,
+      showValue: card.showValue,
+      source: card.source,
+      apiType: card.apiType,
+      displayType: card.displayType,
       timestamp: DateTime.now(),
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
@@ -196,11 +195,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     // Also auto-save to the 'History' folder in the Card Bag
     final newCard = BagCard(
       id: const Uuid().v4(),
-      name: source == 'NFC'
-          ? (nfcType ?? 'NFC Card')
-          : (source == 'QR' ? 'QR Code' : 'Card'),
-      value: value,
+      name: card.displayType,
+      value: card.value,
+      showValue: card.showValue,
       folderId: 'history_folder',
+      source: card.source,
+      apiType: card.apiType,
+      displayType: card.displayType,
     );
     ref.read(bagCardsProvider.notifier).addCard(newCard);
 
@@ -218,8 +219,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       final apiService = ref.read(apiServiceProvider);
       final success = await apiService.sendCardData(
         instance: activeInstance,
-        type: nfcType ?? source,
-        value: value,
+        type: card.apiType,
+        value: card.value,
       );
 
       if (!mounted) return;
@@ -348,7 +349,15 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             onDetect: (capture) {
               for (final barcode in capture.barcodes) {
                 if (barcode.rawValue != null) {
-                  _handleReadData(source: 'QR', value: barcode.rawValue!);
+                  _handleReadData(
+                    ParsedCard(
+                      value: barcode.rawValue!,
+                      showValue: barcode.rawValue!,
+                      source: 'QR',
+                      apiType: 'QR',
+                      displayType: 'QR Code',
+                    ),
+                  );
                   break;
                 }
               }
@@ -538,8 +547,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
     String displaySource = log.source;
     if (log.source == 'NFC') {
-      if (log.nfcType != null && log.nfcType != 'NFC') {
-        displaySource = 'NFC (${log.nfcType})';
+      if (log.apiType != 'nfc') {
+        displaySource = 'NFC (${log.displayType})';
       }
     } else if (log.source == 'Direct') {
       displaySource = 'Card Bag';
@@ -560,7 +569,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         ),
       ),
       title: Text(
-        log.value,
+        log.showValue,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
@@ -571,9 +580,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         onPressed: _isProcessing
             ? null
             : () => _handleReadData(
-                source: log.source,
-                value: log.value,
-                nfcType: log.nfcType,
+                ParsedCard(
+                  value: log.value,
+                  showValue: log.showValue,
+                  source: log.source,
+                  apiType: log.apiType,
+                  displayType: log.displayType,
+                ),
               ),
         tooltip: 'Resend to active instance',
       ),

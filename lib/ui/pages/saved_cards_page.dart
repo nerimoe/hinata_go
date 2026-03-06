@@ -48,7 +48,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: _selectedFolderId,
+                    initialValue: _selectedFolderId,
                     decoration: const InputDecoration(labelText: 'Folder'),
                     items: [
                       ...folders.map((folder) {
@@ -98,7 +98,11 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                         id: const Uuid().v4(),
                         name: nameController.text,
                         value: valueController.text,
+                        showValue: valueController.text,
                         folderId: _selectedFolderId,
+                        source: 'Direct',
+                        apiType: 'Direct',
+                        displayType: 'Manual Entry',
                       );
                       ref.read(bagCardsProvider.notifier).addCard(newCard);
                       Navigator.pop(context);
@@ -160,7 +164,10 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     final newLog = ScanLog(
       id: const Uuid().v4(),
       value: card.value,
+      showValue: card.showValue,
       source: 'Direct',
+      apiType: card.apiType,
+      displayType: card.displayType,
       timestamp: DateTime.now(),
     );
     ref.read(scanLogsProvider.notifier).addLog(newLog);
@@ -175,7 +182,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
           return AlertDialog(
             title: const Text('Confirm Send'),
             content: Text(
-              'Are you sure you want to send this card?\nValue: ${card.value}',
+              'Are you sure you want to send this card?\nValue: ${card.showValue}',
             ),
             actions: [
               TextButton(
@@ -217,10 +224,9 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
       );
 
       final apiService = ref.read(apiServiceProvider);
-      // We default to 'Direct' or similar since type is removed from BagCard
       final success = await apiService.sendCardData(
         instance: activeInstance,
-        type: 'Direct',
+        type: card.apiType,
         value: card.value,
       );
 
@@ -283,7 +289,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
           card.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('Value: ${card.value}'),
+        subtitle: Text('Value: ${card.showValue}'),
         trailing: _isProcessing
             ? const SizedBox(
                 width: 24,
