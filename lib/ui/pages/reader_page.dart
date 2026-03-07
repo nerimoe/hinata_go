@@ -288,7 +288,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       }
     }
 
-    await Future.delayed(const Duration(seconds: 2));
+    // await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
       setState(() {
         _isProcessing = false;
