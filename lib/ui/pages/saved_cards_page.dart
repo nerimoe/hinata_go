@@ -22,144 +22,26 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
 
   void _showAddCardDialog() {
     if (_selectedFolderId == 'history_folder') return;
-
-    final nameController = TextEditingController();
-    final valueController = TextEditingController();
-    final folders = ref
-        .read(cardFoldersProvider)
-        .where((f) => f.id != 'history_folder')
-        .toList();
-
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Add Card Manually'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name / Description',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedFolderId,
-                    decoration: const InputDecoration(labelText: 'Folder'),
-                    items: [
-                      ...folders.map((folder) {
-                        return DropdownMenuItem(
-                          value: folder.id,
-                          child: Text(folder.name),
-                        );
-                      }),
-                      const DropdownMenuItem(
-                        value: 'CREATE_NEW',
-                        child: Text(
-                          '+ New Folder',
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ),
-                    ],
-                    onChanged: (val) => _onFolderDropdownChanged(val, setState),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: valueController,
-                    decoration: const InputDecoration(
-                      labelText: 'Card Value / UID',
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () => _onSaveCard(
-                    nameController.text.trim(),
-                    valueController.text.trim(),
-                  ),
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (context) => _AddCardDialog(
+        initialFolderId: _selectedFolderId,
+        onAddFolderRequested: _showAddFolderDialog,
+      ),
     );
   }
 
   void _showAddFolderDialog() {
-    final nameController = TextEditingController();
-
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('New Folder'),
-          content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(labelText: 'Folder Name'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => _onCreateFolder(nameController.text.trim()),
-              child: const Text('Create'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => _AddFolderDialog(
+        onFolderCreated: (newFolderId) {
+          setState(() {
+            _selectedFolderId = newFolderId;
+          });
+        },
+      ),
     );
-  }
-
-  void _onFolderDropdownChanged(String? val, StateSetter setDialogState) {
-    if (val == 'CREATE_NEW') {
-      Navigator.pop(context);
-      _showAddFolderDialog();
-    } else if (val != null) {
-      setDialogState(() {
-        _selectedFolderId = val;
-      });
-    }
-  }
-
-  void _onSaveCard(String name, String value) {
-    if (name.isNotEmpty && value.isNotEmpty) {
-      final newCard = BagCard(
-        id: const Uuid().v4(),
-        name: name,
-        value: value,
-        showValue: value,
-        folderId: _selectedFolderId,
-        source: 'Direct',
-        apiType: 'Direct',
-        displayType: 'Manual Entry',
-      );
-      ref.read(bagCardsProvider.notifier).addCard(newCard);
-      Navigator.pop(context);
-    }
-  }
-
-  void _onCreateFolder(String name) {
-    if (name.isNotEmpty) {
-      final newFolder = CardFolder(id: const Uuid().v4(), name: name);
-      ref.read(cardFoldersProvider.notifier).addFolder(newFolder);
-      setState(() {
-        _selectedFolderId = newFolder.id;
-      });
-      Navigator.pop(context);
-    }
   }
 
   void _performDeleteFolder(String folderId) {
@@ -227,24 +109,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     if (enableSecondaryConfirmation) {
       final shouldSend = await showDialog<bool>(
         context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Confirm Send'),
-            content: Text(
-              'Are you sure you want to send this card?\nValue: ${card.showValue}',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Send'),
-              ),
-            ],
-          );
-        },
+        builder: (context) => _ConfirmSendDialog(card: card),
       );
       if (!mounted) return;
       if (shouldSend != true) return;
@@ -425,6 +290,194 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
               icon: const Icon(Icons.add),
               label: const Text('Add Card'),
             ),
+    );
+  }
+}
+
+class _AddCardDialog extends ConsumerStatefulWidget {
+  final String initialFolderId;
+  final VoidCallback onAddFolderRequested;
+
+  const _AddCardDialog({
+    required this.initialFolderId,
+    required this.onAddFolderRequested,
+  });
+
+  @override
+  ConsumerState<_AddCardDialog> createState() => _AddCardDialogState();
+}
+
+class _AddCardDialogState extends ConsumerState<_AddCardDialog> {
+  late TextEditingController _nameController;
+  late TextEditingController _valueController;
+  late String _selectedFolderId;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _valueController = TextEditingController();
+    _selectedFolderId = widget.initialFolderId;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _valueController.dispose();
+    super.dispose();
+  }
+
+  void _onSave() {
+    final name = _nameController.text.trim();
+    final value = _valueController.text.trim();
+    if (name.isNotEmpty && value.isNotEmpty) {
+      final newCard = BagCard(
+        id: const Uuid().v4(),
+        name: name,
+        value: value,
+        showValue: value,
+        folderId: _selectedFolderId,
+        source: 'Direct',
+        apiType: 'Direct',
+        displayType: 'Manual Entry',
+      );
+      ref.read(bagCardsProvider.notifier).addCard(newCard);
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final folders = ref
+        .watch(cardFoldersProvider)
+        .where((f) => f.id != 'history_folder')
+        .toList();
+
+    return AlertDialog(
+      title: const Text('Add Card Manually'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(labelText: 'Name / Description'),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            key: ValueKey(_selectedFolderId),
+            initialValue: _selectedFolderId,
+            decoration: const InputDecoration(labelText: 'Folder'),
+            items: [
+              ...folders.map(
+                (folder) => DropdownMenuItem(
+                  value: folder.id,
+                  child: Text(folder.name),
+                ),
+              ),
+              const DropdownMenuItem(
+                value: 'CREATE_NEW',
+                child: Text(
+                  '+ New Folder',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+            ],
+            onChanged: (val) {
+              if (val == 'CREATE_NEW') {
+                Navigator.pop(context);
+                widget.onAddFolderRequested();
+              } else if (val != null) {
+                setState(() {
+                  _selectedFolderId = val;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _valueController,
+            decoration: const InputDecoration(labelText: 'Card Value / UID'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _onSave, child: const Text('Save')),
+      ],
+    );
+  }
+}
+
+class _AddFolderDialog extends ConsumerStatefulWidget {
+  final ValueChanged<String> onFolderCreated;
+  const _AddFolderDialog({required this.onFolderCreated});
+
+  @override
+  ConsumerState<_AddFolderDialog> createState() => _AddFolderDialogState();
+}
+
+class _AddFolderDialogState extends ConsumerState<_AddFolderDialog> {
+  final _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _onCreate() {
+    final name = _nameController.text.trim();
+    if (name.isNotEmpty) {
+      final newFolder = CardFolder(id: const Uuid().v4(), name: name);
+      ref.read(cardFoldersProvider.notifier).addFolder(newFolder);
+      widget.onFolderCreated(newFolder.id);
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New Folder'),
+      content: TextField(
+        controller: _nameController,
+        decoration: const InputDecoration(labelText: 'Folder Name'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _onCreate, child: const Text('Create')),
+      ],
+    );
+  }
+}
+
+class _ConfirmSendDialog extends StatelessWidget {
+  final BagCard card;
+  const _ConfirmSendDialog({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Confirm Send'),
+      content: Text(
+        'Are you sure you want to send this card?\nValue: ${card.showValue}',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Send'),
+        ),
+      ],
     );
   }
 }

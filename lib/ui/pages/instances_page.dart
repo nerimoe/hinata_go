@@ -16,98 +16,10 @@ class InstancesPage extends ConsumerStatefulWidget {
 
 class _InstancesPageState extends ConsumerState<InstancesPage> {
   void _showInstanceDialog([RemoteInstance? existingInstance]) {
-    final isEditing = existingInstance != null;
-    final nameController = TextEditingController(text: existingInstance?.name);
-    final urlController = TextEditingController(text: existingInstance?.url);
-    final iconController = TextEditingController(
-      text: existingInstance?.icon ?? 'dns',
-    );
-
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(isEditing ? 'Edit Instance' : 'Add Instance'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name (e.g. maimaiDX)',
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: urlController,
-                decoration: const InputDecoration(
-                  labelText: 'Webhook URL (http://...)',
-                ),
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: iconController,
-                decoration: const InputDecoration(
-                  labelText: 'Icon Name (e.g. dns, home)',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                _onSaveInstance(
-                  existingInstance,
-                  nameController.text.trim(),
-                  urlController.text.trim(),
-                  iconController.text.trim(),
-                );
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => _InstanceDialog(existingInstance: existingInstance),
     );
-  }
-
-  void _onSaveInstance(
-    RemoteInstance? existingInstance,
-    String name,
-    String url,
-    String iconText,
-  ) {
-    if (name.isEmpty || url.isEmpty) return;
-
-    final isValidUrl = Validators.isValidUrl(url);
-    if (!isValidUrl) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid URL (http/https)')),
-      );
-      return;
-    }
-
-    final newInstance = RemoteInstance(
-      id: existingInstance != null ? existingInstance.id : const Uuid().v4(),
-      name: name,
-      url: url,
-      icon: iconText.isEmpty ? 'dns' : iconText,
-    );
-
-    if (existingInstance != null) {
-      ref.read(instancesProvider.notifier).updateInstance(newInstance);
-    } else {
-      ref.read(instancesProvider.notifier).addInstance(newInstance);
-      if (ref.read(instancesProvider).length == 1) {
-        ref.read(activeInstanceIdProvider.notifier).setActiveId(newInstance.id);
-      }
-    }
-    Navigator.pop(context);
   }
 
   void _onDismissInstance(RemoteInstance instance, bool isActive) {
@@ -151,9 +63,9 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
           backgroundColor: isActive
               ? colorScheme.primaryContainer
               : colorScheme.surfaceContainerHighest,
-          child: Icon(
-            IconUtils.getIconData(instance.icon),
-            color: isActive ? colorScheme.primary : null,
+          child: Text(
+            IconUtils.getEmoji(instance.icon),
+            style: const TextStyle(fontSize: 24),
           ),
         ),
         title: Text(
@@ -211,6 +123,131 @@ class _InstancesPageState extends ConsumerState<InstancesPage> {
         icon: const Icon(Icons.add),
         label: const Text('Add Instance'),
       ),
+    );
+  }
+}
+
+class _InstanceDialog extends ConsumerStatefulWidget {
+  final RemoteInstance? existingInstance;
+  const _InstanceDialog({this.existingInstance});
+
+  @override
+  ConsumerState<_InstanceDialog> createState() => _InstanceDialogState();
+}
+
+class _InstanceDialogState extends ConsumerState<_InstanceDialog> {
+  late TextEditingController _nameController;
+  late TextEditingController _urlController;
+  late String _selectedIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.existingInstance?.name,
+    );
+    _urlController = TextEditingController(text: widget.existingInstance?.url);
+    _selectedIcon = widget.existingInstance?.icon ?? '🐻';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  void _onSave() {
+    final name = _nameController.text.trim();
+    final url = _urlController.text.trim();
+
+    if (name.isEmpty || url.isEmpty) return;
+
+    final isValidUrl = Validators.isValidUrl(url);
+    if (!isValidUrl) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid URL (http/https)')),
+      );
+      return;
+    }
+
+    final newInstance = RemoteInstance(
+      id: widget.existingInstance?.id ?? const Uuid().v4(),
+      name: name,
+      url: url,
+      icon: _selectedIcon.isEmpty ? '🐻' : _selectedIcon,
+    );
+
+    if (widget.existingInstance != null) {
+      ref.read(instancesProvider.notifier).updateInstance(newInstance);
+    } else {
+      ref.read(instancesProvider.notifier).addInstance(newInstance);
+      if (ref.read(instancesProvider).length == 1) {
+        ref.read(activeInstanceIdProvider.notifier).setActiveId(newInstance.id);
+      }
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.existingInstance != null;
+
+    return AlertDialog(
+      title: Text(isEditing ? 'Edit Instance' : 'Add Instance'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Name (e.g. maimaiDX)',
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _urlController,
+            decoration: const InputDecoration(
+              labelText: 'Webhook URL (http://...)',
+            ),
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 10),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Select Icon:'),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: IconUtils.availableIcons.map((iconName) {
+              final isSelected = iconName == _selectedIcon;
+              return ChoiceChip(
+                label: Text(
+                  IconUtils.getEmoji(iconName),
+                  style: const TextStyle(fontSize: 24),
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() {
+                      _selectedIcon = iconName;
+                    });
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _onSave, child: const Text('Save')),
+      ],
     );
   }
 }

@@ -131,7 +131,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
       setState(() {
         _isNfcScanning = true;
-        _nfcStatus = 'Listening for NFC (NfcA/NfcF)...';
+        _nfcStatus = 'Listening for NFC...';
       });
 
       await NfcManager.instance.startSession(
@@ -216,24 +216,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     if (enableSecondaryConfirmation) {
       final shouldSend = await showDialog<bool>(
         context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Confirm Send'),
-            content: Text(
-              'Are you sure you want to send this ${card.displayType} card?\nValue: ${card.value}',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Send'),
-              ),
-            ],
-          );
-        },
+        builder: (context) => _ConfirmSendDialog(card: card),
       );
       if (!mounted) return;
       if (shouldSend != true) {
@@ -489,9 +472,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
       children: [
         CircleAvatar(
           backgroundColor: fgColor.withValues(alpha: 0.1),
-          child: Icon(
-            IconUtils.getIconData(activeInstance.icon),
-            color: fgColor,
+          child: Text(
+            IconUtils.getEmoji(activeInstance.icon),
+            style: const TextStyle(fontSize: 24),
           ),
         ),
         const SizedBox(width: 16),
@@ -692,6 +675,31 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ConfirmSendDialog extends StatelessWidget {
+  final ParsedCard card;
+  const _ConfirmSendDialog({required this.card});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Confirm Send'),
+      content: Text(
+        'Are you sure you want to send this ${card.displayType} card?\nValue: ${card.value}',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Send'),
+        ),
+      ],
     );
   }
 }

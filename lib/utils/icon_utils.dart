@@ -1,22 +1,11 @@
-import 'package:flutter/material.dart';
-
 class IconUtils {
-  static IconData getIconData(String iconName) {
-    switch (iconName.toLowerCase()) {
-      case 'home':
-        return Icons.home;
-      case 'work':
-        return Icons.work;
-      case 'cloud':
-        return Icons.cloud;
-      case 'computer':
-        return Icons.computer;
-      case 'api':
-        return Icons.api;
-      case 'webhook':
-        return Icons.webhook;
-      default:
-        return Icons.dns;
+  static const List<String> availableIcons = ['🐻', '🐧', '🐱', '💻'];
+
+  static String getEmoji(String iconName) {
+    if (availableIcons.contains(iconName)) {
+      return iconName;
     }
+    // Default to the first one if not found or empty
+    return '🐻';
   }
 }
