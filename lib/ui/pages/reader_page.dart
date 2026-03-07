@@ -32,8 +32,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   void initState() {
     super.initState();
     _cameraController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.noDuplicates,
+      detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
+      autoStart: false,
     );
     WidgetsBinding.instance.addObserver(this);
     _startNfc();
@@ -53,10 +54,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
     if (location == '/reader') {
       _startNfc();
-      if (enableCamera) _cameraController.start();
+      if (enableCamera) _safeStartCamera();
     } else {
       _stopNfc();
-      _cameraController.stop();
+      _safeStopCamera();
     }
   }
 
@@ -69,11 +70,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
       if (location == '/reader') {
         _startNfc();
-        if (enableCamera) _cameraController.start();
+        if (enableCamera) _safeStartCamera();
       }
     } else if (state == AppLifecycleState.paused) {
       _stopNfc();
-      _cameraController.stop();
+      _safeStopCamera();
     }
   }
 
@@ -82,8 +83,34 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     _router.routerDelegate.removeListener(_routeListener);
     WidgetsBinding.instance.removeObserver(this);
     _stopNfc();
-    _cameraController.dispose();
+    _safeStopCamera();
+    Future.delayed(const Duration(milliseconds: 200), () {
+      _cameraController.dispose();
+    });
     super.dispose();
+  }
+
+  void _safeStartCamera() {
+    try {
+      if (_cameraController.value.isStarting ||
+          _cameraController.value.isRunning ||
+          _cameraController.value.error != null) {
+        return;
+      }
+      _cameraController.start();
+    } catch (e) {
+      debugPrint('Error starting camera: $e');
+    }
+  }
+
+  void _safeStopCamera() {
+    try {
+      if (_cameraController.value.isRunning) {
+        _cameraController.stop();
+      }
+    } catch (e) {
+      debugPrint('Error stopping camera: $e');
+    }
   }
 
   Future<void> _startNfc() async {
@@ -143,6 +170,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
   Future<void> _handleReadData(ParsedCard card) async {
     if (_isProcessing) return;
+
+    setState(() {
+      _isProcessing = true;
+    });
+
     final enableSecondaryConfirmation = ref
         .read(settingsProvider)
         .enableSecondaryConfirmation;
@@ -170,12 +202,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         },
       );
       if (!mounted) return;
-      if (shouldSend != true) return;
+      if (shouldSend != true) {
+        setState(() {
+          _isProcessing = false;
+        });
+        return;
+      }
     }
-
-    setState(() {
-      _isProcessing = true;
-    });
 
     final activeInstance = ref.read(activeInstanceProvider);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -609,12 +642,16 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     // Since we are in build, we use post-frame callback or let route listener handle it,
     // but just checking the flag is enough to hide it. To actually stop the hardware:
     if (!enableCamera && _cameraController.value.isRunning) {
-      _cameraController.stop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _safeStopCamera();
+      });
     } else if (enableCamera &&
         !_cameraController.value.isRunning &&
         ModalRoute.of(context)?.isCurrent == true) {
       // Start only if currently visible
-      _cameraController.start();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _safeStartCamera();
+      });
     }
 
     return Scaffold(

@@ -155,8 +155,9 @@ class CardFoldersNotifier extends Notifier<List<CardFolder>> {
   }
 
   void removeFolder(String id) {
-    if (id == 'history_folder' || id == 'favorites_folder')
+    if (id == 'history_folder' || id == 'favorites_folder') {
       return; // Cannot delete builtin folders
+    }
     state = state.where((e) => e.id != id).toList();
     ref.read(storageProvider).saveCardFolders(state);
 
