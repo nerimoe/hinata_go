@@ -1,0 +1,54 @@
+name: Flutter Android Build
+
+on:
+  push:
+    branches: [ "main" ] # 当推送到 main 分支时触发
+  pull_request:
+    branches: [ "main" ] # 当提交 PR 到 main 分支时触发
+
+jobs:
+  build:
+    name: Build Android Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Java 环境
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' # 较新的 Flutter 和 AGP 版本推荐使用 Java 17
+
+      - name: 设置 Flutter 环境
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true # 开启缓存以加速后续构建
+
+      - name: 安装依赖
+        run: flutter pub get
+
+      - name: 构建 Android APK
+        run: flutter build apk --release
+
+      # 如果你需要发布到 Google Play，通常需要构建 App Bundle (AAB)
+      # 请取消下方两行的注释即可同时构建 AAB
+      # - name: 构建 Android App Bundle
+      #   run: flutter build appbundle --release
+
+      - name: 上传 APK 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7 # 产物保留天数，可根据需求调整
+
+      # 如果你上面开启了构建 AAB，也需要将其上传
+      # - name: 上传 AAB 产物
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: flutter-android-aab
+      #     path: build/app/outputs/bundle/release/app-release.aab
+      #     retention-days: 7
