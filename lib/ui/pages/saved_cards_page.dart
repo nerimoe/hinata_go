@@ -18,7 +18,7 @@ class SavedCardsPage extends ConsumerStatefulWidget {
 
 class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   bool _isProcessing = false;
-  String _selectedFolderId = 'history_folder'; // Default folder
+  String _selectedFolderId = 'favorites_folder'; // Default folder
 
   void _showAddCardDialog() {
     if (_selectedFolderId == 'history_folder') return;
@@ -47,7 +47,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
   void _performDeleteFolder(String folderId) {
     ref.read(cardFoldersProvider.notifier).removeFolder(folderId);
     setState(() {
-      _selectedFolderId = 'history_folder';
+      _selectedFolderId = 'favorites_folder';
     });
     Navigator.pop(context);
   }
