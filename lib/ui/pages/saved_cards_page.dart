@@ -434,7 +434,7 @@ class _AddCardDialogState extends ConsumerState<_AddCardDialog> {
           const SizedBox(height: 10),
           TextField(
             controller: _valueController,
-            decoration: const InputDecoration(labelText: 'Card Value / UID'),
+            decoration: const InputDecoration(labelText: 'Access Code'),
           ),
         ],
       ),
