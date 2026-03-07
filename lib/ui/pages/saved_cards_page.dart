@@ -45,12 +45,12 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     );
   }
 
-  void _performDeleteFolder(String folderId) {
+  void _performDeleteFolder(BuildContext dialogContext, String folderId) {
     ref.read(cardFoldersProvider.notifier).removeFolder(folderId);
     setState(() {
       _selectedFolderId = 'favorites_folder';
     });
-    Navigator.pop(context);
+    Navigator.pop(dialogContext);
   }
 
   void _onDeleteFolder(CardFolder folder) {
@@ -62,18 +62,18 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
     }
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Folder?'),
         content: Text(
           'Are you sure you want to delete "${folder.name}" and all cards inside it?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => _performDeleteFolder(folder.id),
+            onPressed: () => _performDeleteFolder(dialogContext, folder.id),
             child: const Text('Delete'),
           ),
         ],
