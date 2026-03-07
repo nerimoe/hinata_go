@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -205,7 +206,7 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
           card.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('Value: ${card.showValue}'),
+        subtitle: Text(card.showValue),
         trailing: _isProcessing
             ? const SizedBox(
                 width: 24,
@@ -436,6 +437,11 @@ class _AddCardDialogState extends ConsumerState<_AddCardDialog> {
           TextField(
             controller: _valueController,
             decoration: const InputDecoration(labelText: 'Access Code'),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(20),
+            ],
           ),
         ],
       ),
