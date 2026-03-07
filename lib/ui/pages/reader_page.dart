@@ -387,7 +387,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
                       value: barcode.rawValue!,
                       showValue: barcode.rawValue!,
                       source: 'QR',
-                      apiType: 'QR',
+                      apiType: 'aime',
                       displayType: 'QR Code',
                     ),
                   );
