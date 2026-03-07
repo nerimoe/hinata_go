@@ -1,4 +1,4 @@
-package com.example.sega_nfc
+package moe.neri.hinatago
 
 import io.flutter.embedding.android.FlutterActivity
 

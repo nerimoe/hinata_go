@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:sega_nfc/services/nfc_service.dart';
+import 'package:hinata_go/services/nfc_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/scan_log.dart';
