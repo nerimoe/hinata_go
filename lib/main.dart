@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 
-import 'navigation/router.dart';
-import 'providers/storage_provider.dart';
-import 'services/nfc_handler.dart';
-import 'services/notification_service.dart';
+import 'package:hinata_go/providers/nfc_provider.dart';
+import 'package:hinata_go/providers/storage_provider.dart';
+import 'package:hinata_go/services/notification_service.dart';
+import 'navigation/router.dart'; // Keep this import as it's not explicitly removed or replaced by the instruction
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    ref.listen(nfcHandlerProvider, (previous, next) {});
+    ref.listen(nfcProvider, (previous, next) {});
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {

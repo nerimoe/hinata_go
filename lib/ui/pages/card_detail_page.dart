@@ -7,9 +7,8 @@ import '../../models/card/aime.dart';
 import '../../models/card/banapass.dart';
 import '../../models/card/felica.dart';
 import '../../models/card/iso14443a.dart';
-import '../../providers/app_state_provider.dart';
+import '../../providers/card_sender.dart';
 import '../../providers/settings_provider.dart';
-import '../../services/api_service.dart';
 import '../../services/notification_service.dart';
 import '../widgets/save_card_dialog.dart';
 
@@ -23,7 +22,6 @@ class CardDetailPage extends ConsumerStatefulWidget {
 }
 
 class _CardDetailPageState extends ConsumerState<CardDetailPage> {
-  bool _isSending = false;
   bool _isSaving = false;
 
   Future<void> _saveCard() async {
@@ -39,8 +37,6 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
   }
 
   Future<void> _sendCard() async {
-    if (_isSending) return;
-
     final enableSecondaryConfirmation = ref
         .read(settingsProvider)
         .enableSecondaryConfirmation;
@@ -67,33 +63,7 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
       if (shouldSend != true) return;
     }
 
-    setState(() => _isSending = true);
-
-    final activeInstance = ref.read(activeInstanceProvider);
-    final notificationService = ref.read(notificationServiceProvider);
-
-    if (activeInstance == null) {
-      notificationService.showError('No active instance selected.');
-    } else {
-      notificationService.showInfo('Sending to ${activeInstance.name}...');
-
-      final apiService = ref.read(apiServiceProvider);
-      final success = await apiService.sendCardData(
-        instance: activeInstance,
-        type: widget.card.type ?? 'unknown',
-        value: widget.card.value ?? '',
-      );
-
-      if (mounted) {
-        if (success) {
-          notificationService.showSuccess('Success: Sent.');
-        } else {
-          notificationService.showError('Failed to send.');
-        }
-      }
-    }
-
-    if (mounted) setState(() => _isSending = false);
+    await ref.read(cardSenderProvider.notifier).sendCard(widget.card);
   }
 
   @override
@@ -135,7 +105,7 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
           _BottomAction(
             onSend: _sendCard,
             onSave: _saveCard,
-            isSending: _isSending,
+            isSending: ref.watch(cardSenderProvider),
             isSaving: _isSaving,
           ),
         ],

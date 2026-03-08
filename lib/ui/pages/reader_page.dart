@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hinata_go/services/nfc_handler.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../models/scan_log.dart';
@@ -12,6 +11,8 @@ import '../../models/card/scanned_card.dart';
 import '../../models/card/aime.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/nfc_provider.dart';
+import '../../providers/reader_view_model.dart';
 import '../../utils/icon_utils.dart';
 import '../../utils/qr_handler.dart';
 
@@ -22,79 +23,21 @@ class ReaderPage extends ConsumerStatefulWidget {
   ConsumerState<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends ConsumerState<ReaderPage>
-    with WidgetsBindingObserver {
-  late MobileScannerController _cameraController;
-
+class _ReaderPageState extends ConsumerState<ReaderPage> {
   @override
   void initState() {
     super.initState();
-    _cameraController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      autoStart: false,
-    );
-    WidgetsBinding.instance.addObserver(this);
-
-    // Auto-start NFC session if it's not already scanning
+    // Notify ViewModel that we are visible
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(nfcHandlerProvider.notifier).startSession();
+      ref.read(readerViewModelProvider.notifier).onVisibilityChanged(true);
     });
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted) return;
-    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
-    if (!isCurrent) return;
-
-    if (state == AppLifecycleState.resumed) {
-      final enableCamera = ref.read(settingsProvider).enableCamera;
-      if (enableCamera) {
-        _safeStartCamera();
-      }
-      // Always try to start NFC session on resume if on reader page
-      ref.read(nfcHandlerProvider.notifier).startSession();
-    } else if (state == AppLifecycleState.paused) {
-      _safeStopCamera();
-      // Stop NFC session when backgrounded to prevent resource leaks/errors
-      ref.read(nfcHandlerProvider.notifier).stopSession();
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _safeStopCamera();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _cameraController.dispose();
-    });
-    super.dispose();
-  }
-
-  void _safeStartCamera() {
-    try {
-      if (_cameraController.value.isStarting ||
-          _cameraController.value.isRunning) {
-        return;
-      }
-
-      // If there was an error, try to reset the controller state if possible
-      // or just try starting again which might clear transient issues.
-      _cameraController.start();
-    } catch (e) {
-      debugPrint('Error starting camera: $e');
-    }
-  }
-
-  void _safeStopCamera() {
-    try {
-      if (_cameraController.value.isRunning) {
-        _cameraController.stop();
-      }
-    } catch (e) {
-      debugPrint('Error stopping camera: $e');
-    }
+  void deactivate() {
+    // Notify ViewModel that we might be hidden (deactivate is called when removed from tree)
+    ref.read(readerViewModelProvider.notifier).onVisibilityChanged(false);
+    super.deactivate();
   }
 
   void _onQrDetect(BarcodeCapture capture) {
@@ -114,7 +57,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           accessCodeBytes,
         );
         ref
-            .read(nfcHandlerProvider.notifier)
+            .read(nfcProvider.notifier)
             .handleExternalScan(ScannedCard(card: aime, source: 'QR'));
         break;
       }
@@ -133,12 +76,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
   void _onResendHistoryItem(ScanLog log) {
     ref
-        .read(nfcHandlerProvider.notifier)
+        .read(nfcProvider.notifier)
         .handleExternalScan(ScannedCard(card: log.card, source: log.source));
   }
 
   Widget _buildNfcStatusPill() {
-    final nfcState = ref.watch(nfcHandlerProvider);
+    final nfcState = ref.watch(nfcProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final Color bgColor = nfcState.isScanning
         ? colorScheme.primaryContainer
@@ -180,9 +123,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     );
   }
 
-  Widget _buildQrScanner() {
+  Widget _buildQrScanner(ReaderViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
-    final nfcState = ref.watch(nfcHandlerProvider);
+    final nfcState = ref.watch(nfcProvider);
 
     return Container(
       height: 240,
@@ -196,7 +139,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         fit: StackFit.expand,
         children: [
           ValueListenableBuilder<MobileScannerState>(
-            valueListenable: _cameraController,
+            valueListenable: viewModel.cameraController,
             builder: (context, state, _) {
               if (!state.isInitialized || !state.isRunning) {
                 return _buildCameraPlaceholder(colorScheme, error: state.error);
@@ -205,7 +148,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
             },
           ),
           MobileScanner(
-            controller: _cameraController,
+            controller: viewModel.cameraController,
             errorBuilder: (context, error) {
               return _buildCameraPlaceholder(colorScheme, error: error);
             },
@@ -217,7 +160,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
               child: const Center(child: CircularProgressIndicator()),
             ),
           ValueListenableBuilder<MobileScannerState>(
-            valueListenable: _cameraController,
+            valueListenable: viewModel.cameraController,
             builder: (context, state, _) {
               if (!state.isRunning) return const SizedBox.shrink();
               return _buildScanTargetOverlay();
@@ -384,7 +327,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
   Widget _buildHistoryItem(ScanLog log) {
     final colorScheme = Theme.of(context).colorScheme;
-    final nfcState = ref.watch(nfcHandlerProvider);
+    final nfcState = ref.watch(nfcProvider);
 
     String displaySource = log.source;
     if (log.source == 'NFC') {
@@ -432,42 +375,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     final activeInstance = ref.watch(activeInstanceProvider);
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
     final enableCamera = ref.watch(settingsProvider).enableCamera;
-
-    final isCurrent = ModalRoute.of(context)?.isCurrent == true;
-    final isResumed =
-        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-
-    if (!enableCamera && _cameraController.value.isRunning) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _safeStopCamera();
-      });
-    } else if (enableCamera &&
-        !_cameraController.value.isRunning &&
-        isCurrent &&
-        isResumed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _safeStartCamera();
-      });
-    }
-
-    // Coordinate NFC logic in build as well
-    final nfcState = ref.watch(nfcHandlerProvider);
-    final nfcIsScanning = nfcState.isScanning;
-    if (!isCurrent && nfcIsScanning) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(nfcHandlerProvider.notifier).stopSession();
-      });
-    } else if (isCurrent &&
-        !nfcIsScanning &&
-        isResumed &&
-        nfcState.status == 'Idle') {
-      // Auto-resume NFC ONLY if it's in the 'Idle' state.
-      // If it's in an 'Error' or 'Disabled' state, we wait for a manual resume trigger
-      // (like didChangeAppLifecycleState) to avoid infinite loops in the build method.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(nfcHandlerProvider.notifier).startSession();
-      });
-    }
+    final viewModel = ref.read(readerViewModelProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -488,14 +396,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         ),
         actions: [
           ValueListenableBuilder<MobileScannerState>(
-            valueListenable: _cameraController,
+            valueListenable: viewModel.cameraController,
             builder: (context, state, child) {
               if (!state.isInitialized || !state.isRunning || !enableCamera) {
                 return const SizedBox.shrink();
               }
               return IconButton(
                 icon: const Icon(Icons.cameraswitch),
-                onPressed: () => _cameraController.switchCamera(),
+                onPressed: () => viewModel.cameraController.switchCamera(),
               );
             },
           ),
@@ -510,7 +418,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
               _buildNfcStatusPill(),
               if (enableCamera) ...[
                 const SizedBox(height: 16),
-                _buildQrScanner(),
+                _buildQrScanner(viewModel),
                 const SizedBox(height: 8),
                 const Center(
                   child: Text(

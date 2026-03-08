@@ -8,12 +8,11 @@ import 'package:uuid/uuid.dart';
 import '../models/card/scanned_card.dart';
 import '../models/card/saved_card.dart';
 import '../models/scan_log.dart';
-import '../providers/app_state_provider.dart';
-import '../providers/settings_provider.dart';
 import '../navigation/router.dart';
-import 'api_service.dart';
-import 'nfc_service.dart';
-import 'notification_service.dart';
+import '../services/nfc_service.dart';
+import 'card_sender.dart';
+import 'app_state_provider.dart';
+import 'settings_provider.dart';
 
 class NfcState {
   final bool isScanning;
@@ -35,11 +34,11 @@ class NfcState {
   }
 }
 
-final nfcHandlerProvider = NotifierProvider<NfcHandler, NfcState>(() {
-  return NfcHandler();
+final nfcProvider = NotifierProvider<NfcNotifier, NfcState>(() {
+  return NfcNotifier();
 });
 
-class NfcHandler extends Notifier<NfcState> {
+class NfcNotifier extends Notifier<NfcState> {
   bool _isStarting = false;
 
   @override
@@ -156,41 +155,13 @@ class NfcHandler extends Notifier<NfcState> {
     }
 
     // Auto-send to active instance
-    final activeInstance = ref.read(activeInstanceProvider);
-    final notificationService = ref.read(notificationServiceProvider);
-
-    if (activeInstance != null) {
-      notificationService.showInfo(
-        'Sending ${card.name} to ${activeInstance.name}...',
-      );
-
-      final apiService = ref.read(apiServiceProvider);
-      final success = await apiService.sendCardData(
-        instance: activeInstance,
-        type: card.type ?? 'unknown',
-        value: card.value ?? '',
-      );
-
-      if (success) {
-        notificationService.showSuccess(
-          'Success: Sent to ${activeInstance.name}',
-        );
-      } else {
-        notificationService.showError(
-          'Failed: Could not send to ${activeInstance.name}',
-        );
-      }
-    } else {
-      notificationService.showError(
-        'No active instance set. Data was not sent.',
-      );
-    }
+    await ref.read(cardSenderProvider.notifier).sendCard(card);
 
     // 4. Navigate back to reader page if not there
     ref.read(routerProvider).go('/reader');
   }
 
-  // Also expose for QR processing
+  // Also expose for external processing (like QR)
   Future<void> handleExternalScan(ScannedCard scannedCard) async {
     await _processScannedCard(scannedCard);
   }
