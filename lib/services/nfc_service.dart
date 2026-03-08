@@ -69,7 +69,7 @@ Future _felicaPoll(NfcFAndroid nfcf) async {
   return await nfcf.transceive(command.toBytes());
 }
 
-bool _mayAic(Uint8List idm, Uint8List pmm) {
+bool _mayAic(Uint8List idm, Uint8List pmm, Uint16List systemCodes) {
   if (idm.length < 2 || pmm.length < 8) return false;
   return idm[0] == 0x01 &&
       idm[1] == 0x2E &&
@@ -80,7 +80,8 @@ bool _mayAic(Uint8List idm, Uint8List pmm) {
       pmm[4] == 0x00 &&
       pmm[5] == 0x01 &&
       pmm[6] == 0x43 &&
-      pmm[7] == 0x00;
+      pmm[7] == 0x00 &&
+      systemCodes[0] == 0x88B4;
 }
 
 Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
@@ -104,7 +105,7 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
   }
 
   // 2. Check PMm and IDm specific bytes for Amusement IC
-  final mayAic = _mayAic(idm, pmm);
+  final mayAic = _mayAic(idm, pmm, systemCodesU16);
   if (!mayAic) {
     return defaultReturn;
   }
@@ -131,22 +132,20 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
     final dec = spad0Decrypt(blockData);
 
     // Validate Amusement IC format
-    bool isZeros = true;
     for (int i = 0; i < 6; i++) {
       if (dec[i] != 0) {
-        isZeros = false;
-        break;
+        return defaultReturn;
       }
     }
 
     // Checking high 4 bits of 7th byte for 0x50 (AIC_HEADER_VALID)
-    if (isZeros && (dec[6] & 0xF0) == 0x50) {
+    if ((dec[6] & 0xF0) == 0x50) {
       final accessCodeBytes = Uint8List.fromList(dec.sublist(6, 16));
       final aic = felica.toAic(accessCodeBytes);
       return ScannedCard(card: aic, source: 'NFC');
     }
-  } catch (e) {
-    // Ignore and fallback to generic Felica
+  } catch (_) {
+    // If read error return null;
   }
   return null;
 }
