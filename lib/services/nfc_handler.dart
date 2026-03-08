@@ -9,6 +9,7 @@ import '../models/card/scanned_card.dart';
 import '../models/card/saved_card.dart';
 import '../models/scan_log.dart';
 import '../providers/app_state_provider.dart';
+import '../providers/settings_provider.dart';
 import '../navigation/router.dart';
 import 'api_service.dart';
 import 'nfc_service.dart';
@@ -118,6 +119,7 @@ class NfcHandler extends Notifier<NfcState> {
   }
 
   Future<void> _processScannedCard(ScannedCard scannedCard) async {
+    final settings = ref.read(settingsProvider);
     final card = scannedCard.card;
 
     // 1. Create ScanLog
@@ -138,7 +140,14 @@ class NfcHandler extends Notifier<NfcState> {
     );
     ref.read(savedCardsProvider.notifier).addCard(savedCard);
 
-    // 3. Auto-send to active instance
+    // 3. Handle according to settings
+    if (settings.enableSecondaryConfirmation) {
+      // Navigate to card detail page
+      ref.read(routerProvider).push('/card_detail', extra: card);
+      return;
+    }
+
+    // Auto-send to active instance
     final activeInstance = ref.read(activeInstanceProvider);
     final notificationService = ref.read(notificationServiceProvider);
 

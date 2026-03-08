@@ -11,6 +11,7 @@ import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/notification_service.dart';
+import '../widgets/save_card_dialog.dart';
 
 class CardDetailPage extends ConsumerStatefulWidget {
   final ICCard card;
@@ -23,6 +24,19 @@ class CardDetailPage extends ConsumerStatefulWidget {
 
 class _CardDetailPageState extends ConsumerState<CardDetailPage> {
   bool _isSending = false;
+  bool _isSaving = false;
+
+  Future<void> _saveCard() async {
+    final success = await showDialog<bool>(
+      context: context,
+      builder: (context) =>
+          SaveCardDialog(card: widget.card, source: 'Scanned'),
+    );
+
+    if (success == true) {
+      // Dialog already shows snackbar and adds card
+    }
+  }
 
   Future<void> _sendCard() async {
     if (_isSending) return;
@@ -118,7 +132,12 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
               ),
             ),
           ),
-          _BottomAction(onSend: _sendCard, isSending: _isSending),
+          _BottomAction(
+            onSend: _sendCard,
+            onSave: _saveCard,
+            isSending: _isSending,
+            isSaving: _isSaving,
+          ),
         ],
       ),
     );
@@ -345,9 +364,16 @@ class _InfoRow extends StatelessWidget {
 
 class _BottomAction extends StatelessWidget {
   final VoidCallback onSend;
+  final VoidCallback onSave;
   final bool isSending;
+  final bool isSaving;
 
-  const _BottomAction({required this.onSend, required this.isSending});
+  const _BottomAction({
+    required this.onSend,
+    required this.onSave,
+    required this.isSending,
+    required this.isSaving,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -371,25 +397,52 @@ class _BottomAction extends StatelessWidget {
           ),
         ],
       ),
-      child: FilledButton.icon(
-        onPressed: isSending ? null : onSend,
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        icon: isSending
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: isSaving || isSending ? null : onSave,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              )
-            : const Icon(Icons.send),
-        label: Text(isSending ? 'SENDING...' : 'SEND CARD TO INSTANCE'),
+              ),
+              icon: isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.folder_special),
+              label: Text(isSaving ? 'SAVING...' : 'SAVE'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: FilledButton.icon(
+              onPressed: isSending || isSaving ? null : onSend,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: isSending
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.send),
+              label: Text(isSending ? 'SENDING...' : 'SEND'),
+            ),
+          ),
+        ],
       ),
     );
   }
