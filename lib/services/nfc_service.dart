@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'dart:typed_data';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/nfc_manager_android.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
+import 'package:convert/convert.dart';
 import '../constants/mifare_key.dart';
 import '../models/card/scanned_card.dart';
 import '../models/card/aic.dart';
@@ -11,31 +11,31 @@ import '../models/card/felica.dart';
 import '../models/card/iso14443a.dart';
 import '../utils/spad0.dart';
 
-// String _toHexString(Uint8List bytes) {
-//   return bytes
-//       .map((e) => e.toRadixString(16).padLeft(2, '0'))
-//       .join('')
-//       .toUpperCase();
-// }
+Uint8List _toUint8List(String hexString) {
+  return Uint8List.fromList(hex.decode(hexString));
+}
 
-Future<ScannedCard?> handleNfcTag(NfcTag tag) async {
+String _toHex(Uint8List bytes) {
+  return hex.encode(bytes).toUpperCase();
+}
+
+Future<ScannedCard?> handleNfcTag(NFCTag tag) async {
   // Try Felica
-  final nfcf = NfcFAndroid.from(tag);
-  if (nfcf != null) {
-    return await _handleFelica(nfcf);
+  if (tag.type == NFCTagType.iso18092) {
+    return await _handleFelica(tag);
   }
 
-  // Try Mifare Classic (Android only)
-  final mifare = MifareClassicAndroid.from(tag);
-  if (mifare != null) {
-    return await _handleMifareClassic(mifare, tag);
+  // Try Mifare Classic / ISO14443-4
+  if (tag.type == NFCTagType.mifare_classic ||
+      tag.type == NFCTagType.mifare_ultralight ||
+      tag.type == NFCTagType.iso7816) {
+    return await _handleMifareClassic(tag);
   }
 
   return null;
 }
 
 Future<Uint8List> _felicaReadWithoutEncryption(
-  NfcFAndroid nfcf,
   Uint8List idm,
   List<int> blocks, {
   int serviceCode = 0x000B,
@@ -60,7 +60,8 @@ Future<Uint8List> _felicaReadWithoutEncryption(
   Uint8List fullPayload = command.toBytes();
   fullPayload[0] = fullPayload.length;
 
-  return await nfcf.transceive(fullPayload);
+  final responseHex = await FlutterNfcKit.transceive(_toHex(fullPayload));
+  return _toUint8List(responseHex);
 }
 
 bool _mayAic(Uint8List idm, Uint8List pmm, Uint16List systemCodes) {
@@ -75,22 +76,30 @@ bool _mayAic(Uint8List idm, Uint8List pmm, Uint16List systemCodes) {
       pmm[5] == 0x01 &&
       pmm[6] == 0x43 &&
       pmm[7] == 0x00 &&
-      (systemCodes[0] == 0x88B4 || systemCodes[0] == 0);
+      (systemCodes.isEmpty || systemCodes[0] == 0x88B4 || systemCodes[0] == 0);
 }
 
-Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
-  final idm = nfcf.tag.id;
-  final pmm = nfcf.manufacturer;
-  log(nfcf.systemCode.join(', '));
+Future<ScannedCard?> _handleFelica(NFCTag tag) async {
+  final idm = _toUint8List(tag.id);
+  Uint8List pmm = Uint8List(8);
+  Uint16List systemCodes = Uint16List(0);
 
-  final systemCodesU8 = nfcf.systemCode;
-  final systemCodesU16 = Uint16List.fromList(
-    Iterable.generate(systemCodesU8.length ~/ 2, (i) {
-      return (systemCodesU8[i * 2] << 8) | systemCodesU8[i * 2 + 1];
-    }).toList(),
-  );
+  if (tag.manufacturer != null && tag.manufacturer!.isNotEmpty) {
+    pmm = _toUint8List(tag.manufacturer!);
+  }
 
-  final felica = Felica(idm, pmm, systemCodesU16);
+  if (tag.systemCode != null && tag.systemCode!.isNotEmpty) {
+    final systemCodesU8 = _toUint8List(tag.systemCode!);
+    systemCodes = Uint16List.fromList(
+      Iterable.generate(systemCodesU8.length ~/ 2, (i) {
+        return (systemCodesU8[i * 2] << 8) | systemCodesU8[i * 2 + 1];
+      }).toList(),
+    );
+  }
+
+  log('Felica System Codes: ${systemCodes.join(', ')}');
+
+  final felica = Felica(idm, pmm, systemCodes);
   final defaultReturn = ScannedCard(card: felica, source: 'NFC');
 
   // 1. Quick filter: only process if IDm starts with 0x00 or 0x01
@@ -99,13 +108,13 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
   }
 
   // 2. Check PMm and IDm specific bytes for Amusement IC
-  final mayAic = _mayAic(idm, pmm, systemCodesU16);
+  final mayAic = _mayAic(idm, pmm, systemCodes);
   if (!mayAic) {
     return defaultReturn;
   }
 
   try {
-    final response = await _felicaReadWithoutEncryption(nfcf, idm, [0]);
+    final response = await _felicaReadWithoutEncryption(idm, [0]);
 
     // Check response length (minimum 13 bytes to contain Status Flags)
     if (response.length < 12) {
@@ -132,63 +141,63 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
       final aic = felica.toAic(accessCodeBytes);
       return ScannedCard(card: aic, source: 'NFC');
     }
-  } catch (_) {
-    // If read error return null;
+  } catch (e) {
+    log('Felica read error: $e');
   }
   return null;
 }
 
-Future<ScannedCard> _handleMifareClassic(
-  MifareClassicAndroid mifare,
-  NfcTag nfcTag,
-) async {
-  final id = mifare.tag.id;
-  final nfcA = NfcAAndroid.from(nfcTag);
-  final sak = nfcA?.sak ?? 0x08;
-  final atqa = nfcA?.atqa ?? Uint8List.fromList([0x04, 0x00]);
-  final atqaInt = (atqa[1] << 8) | atqa[0];
+Future<ScannedCard> _handleMifareClassic(NFCTag tag) async {
+  final id = _toUint8List(tag.id);
+  int sak = 0x08;
+  int atqaInt = 0x0400;
+
+  if (tag.sak != null && tag.sak!.isNotEmpty) {
+    sak = int.tryParse(tag.sak!, radix: 16) ?? 0x08;
+  }
+  if (tag.atqa != null && tag.atqa!.isNotEmpty) {
+    final atqaBytes = _toUint8List(tag.atqa!);
+    if (atqaBytes.length >= 2) {
+      atqaInt = (atqaBytes[1] << 8) | atqaBytes[0];
+    }
+  }
 
   try {
     // Banapassort: Block 1 & 2 authenticated with Auth A
     try {
-      bool authBana = await mifare.authenticateSectorWithKeyA(
-        sectorIndex: 0,
-        key: Uint8List.fromList(banaKey),
+      await FlutterNfcKit.authenticateSector(
+        0,
+        keyA: Uint8List.fromList(banaKey),
       );
-      if (authBana) {
-        final block1 = await mifare.readBlock(blockIndex: 1);
-        final block2 = await mifare.readBlock(blockIndex: 2);
 
-        final iso = Iso14443(id, sak, atqaInt);
-        final banapass = iso.toBanapass(
-          Uint8List.fromList(block1),
-          Uint8List.fromList(block2),
-        );
-        return ScannedCard(card: banapass, source: 'NFC');
-      }
+      final block1 = await FlutterNfcKit.readBlock(1);
+      final block2 = await FlutterNfcKit.readBlock(2);
+
+      final iso = Iso14443(id, sak, atqaInt);
+      final banapass = iso.toBanapass(block1, block2);
+      return ScannedCard(card: banapass, source: 'NFC');
     } catch (_) {}
 
     // Aime: Block 2 authenticated with Auth B
     try {
-      bool authAime = await mifare.authenticateSectorWithKeyB(
-        sectorIndex: 0,
-        key: Uint8List.fromList(aimeKey),
+      await FlutterNfcKit.authenticateSector(
+        0,
+        keyB: Uint8List.fromList(aimeKey),
       );
-      if (authAime) {
-        final block2 = await mifare.readBlock(blockIndex: 2);
-        if (block2.length >= 16) {
-          final accessCodeBytes = Uint8List.fromList(block2.sublist(6, 16));
-          final iso = Iso14443(id, sak, atqaInt);
-          final aime = iso.toAime(accessCodeBytes);
-          return ScannedCard(card: aime, source: 'NFC');
-        }
+
+      final block2 = await FlutterNfcKit.readBlock(2);
+      if (block2.length >= 16) {
+        final accessCodeBytes = Uint8List.fromList(block2.sublist(6, 16));
+        final iso = Iso14443(id, sak, atqaInt);
+        final aime = iso.toAime(accessCodeBytes);
+        return ScannedCard(card: aime, source: 'NFC');
       }
     } catch (_) {}
   } catch (e) {
-    // Fallback to generic
+    log('Mifare error: $e');
   }
 
-  // Fallback: return as generic Felica-like with idString
+  // Fallback: return as generic
   final iso = Iso14443(id, sak, atqaInt);
   return ScannedCard(card: iso, source: 'NFC');
 }

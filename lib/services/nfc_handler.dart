@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nfc_manager/nfc_manager.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/card/scanned_card.dart';
@@ -45,40 +45,51 @@ class NfcHandler extends Notifier<NfcState> {
   Future<void> startSession() async {
     if (state.isScanning) return;
     try {
-      NfcAvailability availability = await NfcManager.instance
-          .checkAvailability();
-      if (availability == NfcAvailability.unsupported) {
+      NFCAvailability availability = await FlutterNfcKit.nfcAvailability;
+      if (availability == NFCAvailability.not_supported) {
         state = state.copyWith(status: 'Your device does not support NFC');
         return;
       }
 
-      if (availability == NfcAvailability.disabled) {
+      if (availability == NFCAvailability.disabled) {
         state = state.copyWith(status: 'Please enable NFC');
         return;
       }
 
       state = state.copyWith(isScanning: true, status: 'Listening for NFC...');
 
-      await NfcManager.instance.startSession(
-        pollingOptions: {NfcPollingOption.iso14443, NfcPollingOption.iso18092},
-        onDiscovered: (NfcTag tag) async {
+      while (state.isScanning) {
+        try {
+          NFCTag tag = await FlutterNfcKit.poll(
+            iosAlertMessage: 'Hold your card near the top of your iPhone',
+            readIso18092: true,
+          );
           await _onTagDiscovered(tag);
-        },
-      );
+        } catch (e) {
+          if (e.toString().contains('User Canceled') ||
+              e.toString().contains('Session Timeout')) {
+            break;
+          }
+          // Log error but continue polling if still scanning
+        }
+      }
     } catch (e) {
       state = state.copyWith(isScanning: false, status: 'Error: $e');
+    } finally {
+      if (state.isScanning) {
+        stopSession();
+      }
     }
   }
 
   Future<void> stopSession() async {
-    if (!state.isScanning) return;
-    try {
-      await NfcManager.instance.stopSession();
-    } catch (_) {}
     state = state.copyWith(isScanning: false, status: 'Stopped');
+    try {
+      await FlutterNfcKit.finish();
+    } catch (_) {}
   }
 
-  Future<void> _onTagDiscovered(NfcTag tag) async {
+  Future<void> _onTagDiscovered(NFCTag tag) async {
     if (state.isProcessing) return;
     state = state.copyWith(isProcessing: true);
 
