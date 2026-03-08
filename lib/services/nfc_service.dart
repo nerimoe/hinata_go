@@ -63,17 +63,6 @@ Future<Uint8List> _felicaReadWithoutEncryption(
   return await nfcf.transceive(fullPayload);
 }
 
-Future _felicaPoll(NfcFAndroid nfcf) async {
-  final command = BytesBuilder();
-  command.addByte(0x06);
-  command.addByte(0);
-  command.addByte(0xFF);
-  command.addByte(0xFF);
-  command.addByte(1);
-  command.addByte(0x0F);
-  return await nfcf.transceive(command.toBytes());
-}
-
 bool _mayAic(Uint8List idm, Uint8List pmm, Uint16List systemCodes) {
   if (idm.length < 2 || pmm.length < 8) return false;
   return idm[0] == 0x01 &&
@@ -116,7 +105,6 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
   }
 
   try {
-    _felicaPoll(nfcf); // NFC标签拉起应用时需要
     final response = await _felicaReadWithoutEncryption(nfcf, idm, [0]);
 
     // Check response length (minimum 13 bytes to contain Status Flags)
