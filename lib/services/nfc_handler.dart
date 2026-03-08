@@ -23,7 +23,7 @@ class NfcState {
   NfcState({
     this.isScanning = false,
     this.isProcessing = false,
-    this.status = 'Ready to scan',
+    this.status = 'Idle',
   });
 
   NfcState copyWith({bool? isScanning, bool? isProcessing, String? status}) {
@@ -40,6 +40,8 @@ final nfcHandlerProvider = NotifierProvider<NfcHandler, NfcState>(() {
 });
 
 class NfcHandler extends Notifier<NfcState> {
+  bool _isStarting = false;
+
   @override
   NfcState build() {
     // Listen to tagStream for tags relayed from Android Intents (App Launch)
@@ -57,19 +59,24 @@ class NfcHandler extends Notifier<NfcState> {
   }
 
   Future<void> startSession() async {
-    if (state.isScanning) return;
+    if (state.isScanning || _isStarting) return;
+    _isStarting = true;
+
     try {
       NFCAvailability availability = await FlutterNfcKit.nfcAvailability;
       if (availability == NFCAvailability.not_supported) {
+        _isStarting = false;
         state = state.copyWith(status: 'Your device does not support NFC');
         return;
       }
 
       if (availability == NFCAvailability.disabled) {
+        _isStarting = false;
         state = state.copyWith(status: 'Please enable NFC');
         return;
       }
 
+      _isStarting = false;
       state = state.copyWith(isScanning: true, status: 'Listening for NFC...');
 
       while (state.isScanning) {
@@ -89,6 +96,7 @@ class NfcHandler extends Notifier<NfcState> {
         }
       }
     } catch (e) {
+      _isStarting = false;
       state = state.copyWith(isScanning: false, status: 'Error: $e');
     } finally {
       if (state.isScanning) {
@@ -98,7 +106,7 @@ class NfcHandler extends Notifier<NfcState> {
   }
 
   Future<void> stopSession() async {
-    state = state.copyWith(isScanning: false, status: 'Stopped');
+    state = state.copyWith(isScanning: false, status: 'Idle');
     try {
       await FlutterNfcKit.finish();
     } catch (_) {}

@@ -27,12 +27,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-
-    // Global NFC handler initialization
     ref.listen(nfcHandlerProvider, (previous, next) {});
-
-    // Auto-start NFC if needed (or we can do it in a useEffect-like way)
-    // For now, let's just make sure the provider is instantiated and can be started.
 
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {

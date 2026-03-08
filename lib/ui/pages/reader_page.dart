@@ -44,11 +44,21 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    if (!isCurrent) return;
+
     if (state == AppLifecycleState.resumed) {
       final enableCamera = ref.read(settingsProvider).enableCamera;
-      if (enableCamera) _safeStartCamera();
+      if (enableCamera) {
+        _safeStartCamera();
+      }
+      // Always try to start NFC session on resume if on reader page
+      ref.read(nfcHandlerProvider.notifier).startSession();
     } else if (state == AppLifecycleState.paused) {
       _safeStopCamera();
+      // Stop NFC session when backgrounded to prevent resource leaks/errors
+      ref.read(nfcHandlerProvider.notifier).stopSession();
     }
   }
 
@@ -65,10 +75,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
   void _safeStartCamera() {
     try {
       if (_cameraController.value.isStarting ||
-          _cameraController.value.isRunning ||
-          _cameraController.value.error != null) {
+          _cameraController.value.isRunning) {
         return;
       }
+
+      // If there was an error, try to reset the controller state if possible
+      // or just try starting again which might clear transient issues.
       _cameraController.start();
     } catch (e) {
       debugPrint('Error starting camera: $e');
@@ -143,36 +155,26 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
           color: bgColor,
           borderRadius: BorderRadius.circular(30),
         ),
-        child: InkWell(
-          onTap: () {
-            if (nfcState.isScanning) {
-              ref.read(nfcHandlerProvider.notifier).stopSession();
-            } else {
-              ref.read(nfcHandlerProvider.notifier).startSession();
-            }
-          },
-          borderRadius: BorderRadius.circular(30),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.nfc,
-                color: nfcState.isScanning
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-                size: 20,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.nfc,
+              color: nfcState.isScanning
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                nfcState.status,
+                key: ValueKey(nfcState.status),
+                style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(width: 8),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  nfcState.status,
-                  key: ValueKey(nfcState.status),
-                  style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -431,15 +433,39 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
     final enableCamera = ref.watch(settingsProvider).enableCamera;
 
+    final isCurrent = ModalRoute.of(context)?.isCurrent == true;
+    final isResumed =
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+
     if (!enableCamera && _cameraController.value.isRunning) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _safeStopCamera();
       });
     } else if (enableCamera &&
         !_cameraController.value.isRunning &&
-        ModalRoute.of(context)?.isCurrent == true) {
+        isCurrent &&
+        isResumed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _safeStartCamera();
+      });
+    }
+
+    // Coordinate NFC logic in build as well
+    final nfcState = ref.watch(nfcHandlerProvider);
+    final nfcIsScanning = nfcState.isScanning;
+    if (!isCurrent && nfcIsScanning) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(nfcHandlerProvider.notifier).stopSession();
+      });
+    } else if (isCurrent &&
+        !nfcIsScanning &&
+        isResumed &&
+        nfcState.status == 'Idle') {
+      // Auto-resume NFC ONLY if it's in the 'Idle' state.
+      // If it's in an 'Error' or 'Disabled' state, we wait for a manual resume trigger
+      // (like didChangeAppLifecycleState) to avoid infinite loops in the build method.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(nfcHandlerProvider.notifier).startSession();
       });
     }
 
