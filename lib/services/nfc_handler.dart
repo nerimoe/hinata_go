@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:developer';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:uuid/uuid.dart';
@@ -39,6 +41,17 @@ final nfcHandlerProvider = NotifierProvider<NfcHandler, NfcState>(() {
 class NfcHandler extends Notifier<NfcState> {
   @override
   NfcState build() {
+    // Listen to tagStream for tags relayed from Android Intents (App Launch)
+    FlutterNfcKit.tagStream.listen((tag) {
+      _onTagDiscovered(tag);
+    });
+
+    // Pulse the native side to relay the initial tag that launched the app
+    const methodChannel = MethodChannel('moe.neri.hinatago/nfc_launcher');
+    methodChannel.invokeMethod('getInitialTag').catchError((e) {
+      log('Error getting initial tag: $e');
+    });
+
     return NfcState();
   }
 
@@ -63,6 +76,7 @@ class NfcHandler extends Notifier<NfcState> {
           NFCTag tag = await FlutterNfcKit.poll(
             iosAlertMessage: 'Hold your card near the top of your iPhone',
             readIso18092: true,
+            readIso14443B: false,
           );
           await _onTagDiscovered(tag);
         } catch (e) {
