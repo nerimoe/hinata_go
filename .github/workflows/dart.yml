@@ -53,29 +53,35 @@ jobs:
           CLEAN_LATEST=$(echo "${LATEST_TAG#v}" | tr -d '\r')
 
           CHANGELOG="自动构建产物"
+          IS_PRERELEASE=true
           
           if [ "$PUB_VER" == "$CLEAN_LATEST" ]; then
             NEW_TAG="pre-${PUB_VER}-${COMMIT_SHORT}"
             TITLE="Pre-release ${PUB_VER} (${COMMIT_SHORT})"
-            IS_PRERELEASE=true
           else
             NEW_TAG="v${PUB_VER}"
             TITLE="Release v${PUB_VER}"
             IS_PRERELEASE=false
             
-            # 提取更新日志: 筛选 feat, fix, ui 开头的 commit
             if [ -n "$LATEST_TAG" ]; then
               LOGS=$(git log "$LATEST_TAG..HEAD" --oneline | grep -E "^[a-f0-9]+ (feat|fix|ui):" || echo "无特定变更记录")
             else
               LOGS=$(git log --oneline | grep -E "^[a-f0-9]+ (feat|fix|ui):" || echo "首次发布")
             fi
-            CHANGELOG="### 🚀 更新内容\n$LOGS"
+            CHANGELOG="### 🚀 更新内容"$'\n'"$LOGS"
           fi
 
+          # 写入单行输出
           echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
           echo "mode_title=$TITLE" >> $GITHUB_OUTPUT
           echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-          echo -e "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+          # --- 核心修复：多行输出处理 ---
+          {
+            echo "changelog<<EOF"
+            echo -e "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
