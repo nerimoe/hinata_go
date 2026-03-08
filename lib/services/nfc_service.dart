@@ -58,6 +58,17 @@ Future<Uint8List> _felicaReadWithoutEncryption(
   return await nfcf.transceive(command.toBytes());
 }
 
+Future _felicaPoll(NfcFAndroid nfcf) async {
+  final command = BytesBuilder();
+  command.addByte(0x06);
+  command.addByte(0);
+  command.addByte(0xFF);
+  command.addByte(0xFF);
+  command.addByte(1);
+  command.addByte(0x0F);
+  return await nfcf.transceive(command.toBytes());
+}
+
 bool _mayAic(Uint8List idm, Uint8List pmm) {
   if (idm.length < 2 || pmm.length < 8) return false;
   return idm[0] == 0x01 &&
@@ -99,7 +110,7 @@ Future<ScannedCard?> _handleFelica(NfcFAndroid nfcf) async {
   }
 
   try {
-    // 3. Try reading Amusement IC data area
+    await _felicaPoll(nfcf);
     final response = await _felicaReadWithoutEncryption(
       nfcf,
       idm,
