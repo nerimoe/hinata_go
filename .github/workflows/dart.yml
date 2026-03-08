@@ -1,40 +1,38 @@
-name: Flutter Android Build
+name: Flutter Android Build & Auto Release
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
-    name: Build Android Release
+    name: Build and Auto Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: 检出代码
+      - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 设置 Java 环境
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 设置 Flutter 环境
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
       - name: Decode Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      - name: 安装依赖
-        run: flutter pub get
-
-      - name: 构建 Android APK
+      - name: Build APK
         run: flutter build apk --release
         env:
           ANDROID_KEYSTORE_PATH: "release.keystore"
@@ -42,19 +40,54 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      # - name: 构建 Android App Bundle
-      #   run: flutter build appbundle --release
+      - name: Version Check & Generate Changelog
+        id: meta
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          PUB_VER=$(grep "^version:" pubspec.yaml | sed 's/version://' | tr -d ' "' | cut -d'+' -f1 | tr -d '\r')
+          COMMIT_SHORT=$(git rev-parse --short HEAD | tr -d '\r')
+          
+          LATEST_TAG=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          CLEAN_LATEST=$(echo "${LATEST_TAG#v}" | tr -d '\r')
 
-      - name: 上传 APK 产物
-        uses: actions/upload-artifact@v4
+          CHANGELOG="自动构建产物"
+          
+          if [ "$PUB_VER" == "$CLEAN_LATEST" ]; then
+            NEW_TAG="pre-${PUB_VER}-${COMMIT_SHORT}"
+            TITLE="Pre-release ${PUB_VER} (${COMMIT_SHORT})"
+            IS_PRERELEASE=true
+          else
+            NEW_TAG="v${PUB_VER}"
+            TITLE="Release v${PUB_VER}"
+            IS_PRERELEASE=false
+            
+            # 提取更新日志: 筛选 feat, fix, ui 开头的 commit
+            if [ -n "$LATEST_TAG" ]; then
+              LOGS=$(git log "$LATEST_TAG..HEAD" --oneline | grep -E "^[a-f0-9]+ (feat|fix|ui):" || echo "无特定变更记录")
+            else
+              LOGS=$(git log --oneline | grep -E "^[a-f0-9]+ (feat|fix|ui):" || echo "首次发布")
+            fi
+            CHANGELOG="### 🚀 更新内容\n$LOGS"
+          fi
+
+          echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "mode_title=$TITLE" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo -e "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: flutter-android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 7
-
-      # - name: 上传 AAB 产物
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: flutter-android-aab
-      #     path: build/app/outputs/bundle/release/app-release.aab
-      #     retention-days: 7
+          files: build/app/outputs/flutter-apk/app-release.apk
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          name: ${{ steps.meta.outputs.mode_title }}
+          prerelease: ${{ steps.meta.outputs.is_prerelease == 'true' }}
+          body: |
+            ${{ steps.meta.outputs.changelog }}
+            
+            ---
+            **Build Info**: `${{ github.sha }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
