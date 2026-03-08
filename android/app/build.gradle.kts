@@ -30,6 +30,15 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: keystoreProperties['keyAlias']
+            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: keystoreProperties['keyPassword']
+            storeFile System.getenv('ANDROID_KEYSTORE_PATH') ? file(System.getenv('ANDROID_KEYSTORE_PATH')) : (keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null)
+            storePassword System.getenv('ANDROID_STORE_PASSWORD') ?: keystoreProperties['storePassword']
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
