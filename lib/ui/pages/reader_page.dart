@@ -603,6 +603,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage>
         onPressed: _isProcessing ? null : () => _onResendHistoryItem(log),
         tooltip: 'Resend to active instance',
       ),
+      onTap: () => context.push('/card_detail', extra: log.card),
     );
   }
 

@@ -213,11 +213,11 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : IconButton(
-                icon: const Icon(Icons.send),
+                icon: const Icon(Icons.send_rounded),
                 onPressed: () => _sendCardData(card),
-                tooltip: 'Send to active instance',
+                tooltip: 'Quick Send',
               ),
-        onTap: () => _sendCardData(card),
+        onTap: () => context.push('/card_detail', extra: card.card),
       ),
     );
   }
