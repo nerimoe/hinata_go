@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NFCReaderUsageDescription</key>
+	<string>We need NFC access to read your smart cards.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to scan card QR codes.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -66,9 +70,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>We need camera access to scan card QR codes.</string>
-	<key>NFCReaderUsageDescription</key>
-	<string>We need NFC access to read your smart cards.</string>
 </dict>
 </plist>
