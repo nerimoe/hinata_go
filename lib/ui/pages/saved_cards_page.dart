@@ -246,89 +246,96 @@ class _SavedCardsPageState extends ConsumerState<SavedCardsPage> {
         ],
       ),
       body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          final double velocity = details.primaryVelocity ?? 0.0;
-          if (velocity.abs() < 300) return;
-
-          final currentFolderIndex = folders.indexWhere(
-            (f) => f.id == _selectedFolderId,
-          );
-          if (currentFolderIndex == -1) return;
-
-          if (velocity > 0) {
-            // Swiped right -> go to previous folder
-            if (currentFolderIndex > 0) {
-              setState(() {
-                _selectedFolderId = folders[currentFolderIndex - 1].id;
-              });
-            } else {
-              // Already at first folder, go to previous tab
-              context.go('/reader');
-            }
-          } else {
-            // Swiped left -> go to next folder
-            if (currentFolderIndex < folders.length - 1) {
-              setState(() {
-                _selectedFolderId = folders[currentFolderIndex + 1].id;
-              });
-            } else {
-              // Already at last folder, go to next tab
-              context.go('/settings');
-            }
-          }
-        },
+        onHorizontalDragEnd: (details) => _handleSwipe(details, folders),
         behavior: HitTestBehavior.translucent,
         child: Column(
           children: [
-            // Folder Selection Strip
-            SizedBox(
-              height: 60,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                itemCount: folders.length,
-                itemBuilder: (context, index) {
-                  final folder = folders[index];
-                  final isSelected = folder.id == _selectedFolderId;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GestureDetector(
-                      onLongPress: () => _onDeleteFolder(folder),
-                      child: FilterChip(
-                        label: Text(folder.name),
-                        selected: isSelected,
-                        onSelected: (selected) =>
-                            _onSelectFolder(selected, folder.id),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            _buildFolderSelectionStrip(folders),
             const Divider(height: 1),
-            // Cards List
-            Expanded(
-              child: folderCards.isEmpty
-                  ? const Center(child: Text('No cards in this folder.'))
-                  : ListView.builder(
-                      itemCount: folderCards.length,
-                      itemBuilder: (context, index) =>
-                          _buildCardItem(folderCards[index]),
-                    ),
-            ),
+            _buildCardsList(folderCards),
           ],
         ),
       ),
-      floatingActionButton: _selectedFolderId == 'history_folder'
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _showAddCardDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Card'),
+      floatingActionButton: _buildFAB(),
+    );
+  }
+
+  void _handleSwipe(DragEndDetails details, List<CardFolder> folders) {
+    final double velocity = details.primaryVelocity ?? 0.0;
+    if (velocity.abs() < 300) return;
+
+    final currentFolderIndex = folders.indexWhere(
+      (f) => f.id == _selectedFolderId,
+    );
+    if (currentFolderIndex == -1) return;
+
+    if (velocity > 0) {
+      // Swiped right -> go to previous folder
+      if (currentFolderIndex > 0) {
+        setState(() {
+          _selectedFolderId = folders[currentFolderIndex - 1].id;
+        });
+      } else {
+        // Already at first folder, go to previous tab
+        context.go('/reader');
+      }
+    } else {
+      // Swiped left -> go to next folder
+      if (currentFolderIndex < folders.length - 1) {
+        setState(() {
+          _selectedFolderId = folders[currentFolderIndex + 1].id;
+        });
+      } else {
+        // Already at last folder, go to next tab
+        context.go('/settings');
+      }
+    }
+  }
+
+  Widget _buildFolderSelectionStrip(List<CardFolder> folders) {
+    return SizedBox(
+      height: 60,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: folders.length,
+        itemBuilder: (context, index) {
+          final folder = folders[index];
+          final isSelected = folder.id == _selectedFolderId;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: GestureDetector(
+              onLongPress: () => _onDeleteFolder(folder),
+              child: FilterChip(
+                label: Text(folder.name),
+                selected: isSelected,
+                onSelected: (selected) => _onSelectFolder(selected, folder.id),
+              ),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCardsList(List<SavedCard> folderCards) {
+    return Expanded(
+      child: folderCards.isEmpty
+          ? const Center(child: Text('No cards in this folder.'))
+          : ListView.builder(
+              itemCount: folderCards.length,
+              itemBuilder: (context, index) =>
+                  _buildCardItem(folderCards[index]),
+            ),
+    );
+  }
+
+  Widget? _buildFAB() {
+    if (_selectedFolderId == 'history_folder') return null;
+    return FloatingActionButton.extended(
+      onPressed: _showAddCardDialog,
+      icon: const Icon(Icons.add),
+      label: const Text('Add Card'),
     );
   }
 }

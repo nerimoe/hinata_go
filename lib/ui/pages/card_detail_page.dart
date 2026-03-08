@@ -282,7 +282,7 @@ class _HeaderCard extends StatelessWidget {
 
     return Card(
       elevation: 4,
-      shadowColor: colorScheme.shadow.withOpacity(0.2),
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       color: colorScheme.primaryContainer,
       child: Padding(
@@ -292,7 +292,7 @@ class _HeaderCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorScheme.onPrimaryContainer.withOpacity(0.1),
+                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -393,7 +393,7 @@ class _BottomAction extends StatelessWidget {
         color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
+            color: colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
