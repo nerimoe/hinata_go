@@ -1,7 +1,15 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -20,10 +28,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "moe.neri.hinatago"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -31,19 +36,32 @@ android {
     }
 
     signingConfigs {
-        release {
-            keyAlias System.getenv('ANDROID_KEY_ALIAS') ?: keystoreProperties['keyAlias']
-            keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: keystoreProperties['keyPassword']
-            storeFile System.getenv('ANDROID_KEYSTORE_PATH') ? file(System.getenv('ANDROID_KEYSTORE_PATH')) : (keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null)
-            storePassword System.getenv('ANDROID_STORE_PASSWORD') ?: keystoreProperties['storePassword']
+        create("release") {
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS") 
+                ?: keystoreProperties.getProperty("keyAlias")
+            
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD") 
+                ?: keystoreProperties.getProperty("keyPassword")
+            
+            storePassword = System.getenv("ANDROID_STORE_PASSWORD") 
+                ?: keystoreProperties.getProperty("storePassword")
+
+            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH") 
+                ?: keystoreProperties.getProperty("storeFile")
+            
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+            }
         }
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
