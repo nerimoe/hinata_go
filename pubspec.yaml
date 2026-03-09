@@ -108,6 +108,13 @@ flutter_launcher_icons:
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon/logo_foreground.png"
   adaptive_icon_monochrome: "assets/icon/logo_monochrome.png"
+  # iOS 18+ App Icon Support
+  image_path_ios_standard_transparent: "assets/icon/logo_foreground.png"
+  ios_standard_background_color: "#FFFFFF"
+  image_path_ios_dark_transparent: "assets/icon/logo_foreground.png"
+  ios_dark_background_color: "#1A1A1A"
+  image_path_ios_tinted_grayscale: "assets/icon/logo_monochrome.png"
+  desaturate_tinted_to_grayscale_ios: true
   min_sdk_android: 21
   web:
     generate: true
