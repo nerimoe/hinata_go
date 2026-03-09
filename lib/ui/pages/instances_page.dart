@@ -22,50 +22,65 @@ class InstancesPage extends HookConsumerWidget {
     );
   }
 
-  void _onDismissInstance(
-    WidgetRef ref,
-    RemoteInstance instance,
-    bool isActive,
-  ) {
-    if (isActive) {
-      ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
-    }
-    ref.read(instancesProvider.notifier).removeInstance(instance.id);
-  }
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final instances = ref.watch(instancesProvider);
+    final activeId = ref.watch(activeInstanceIdProvider);
 
-  void _onTapInstance(
-    BuildContext context,
-    WidgetRef ref,
-    RemoteInstance instance,
-  ) {
-    ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
-    ScaffoldMessenger.of(context).showQuickSnackBar(
-      SnackBar(content: Text('${instance.name} is now active')),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Remote Instances')),
+      body: instances.isEmpty
+          ? const Center(child: Text('No instances configured.'))
+          : ListView.builder(
+              itemCount: instances.length,
+              itemBuilder: (context, index) {
+                final instance = instances[index];
+                return _InstanceItem(
+                  instance: instance,
+                  isActive: instance.id == activeId,
+                  onEdit: () => _showInstanceDialog(context, instance),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showInstanceDialog(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Instance'),
+      ),
     );
   }
+}
 
-  Widget _buildDismissBackground() {
-    return Container(
-      color: Colors.red,
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      child: const Icon(Icons.delete, color: Colors.white),
-    );
-  }
+class _InstanceItem extends ConsumerWidget {
+  final RemoteInstance instance;
+  final bool isActive;
+  final VoidCallback onEdit;
 
-  Widget _buildInstanceItem(
-    BuildContext context,
-    WidgetRef ref,
-    RemoteInstance instance,
-    bool isActive,
-  ) {
+  const _InstanceItem({
+    required this.instance,
+    required this.isActive,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
       key: ValueKey(instance.id),
       direction: DismissDirection.endToStart,
-      background: _buildDismissBackground(),
-      onDismissed: (_) => _onDismissInstance(ref, instance, isActive),
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) {
+        if (isActive) {
+          ref.read(activeInstanceIdProvider.notifier).setActiveId(null);
+        }
+        ref.read(instancesProvider.notifier).removeInstance(instance.id);
+      },
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isActive
@@ -95,42 +110,15 @@ class InstancesPage extends HookConsumerWidget {
                 padding: EdgeInsets.only(right: 8.0),
                 child: Icon(Icons.check_circle, color: Colors.green),
               ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _showInstanceDialog(context, instance),
-            ),
+            IconButton(icon: const Icon(Icons.edit), onPressed: onEdit),
           ],
         ),
-        onTap: () => _onTapInstance(context, ref, instance),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final instances = ref.watch(instancesProvider);
-    final activeId = ref.watch(activeInstanceIdProvider);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Remote Instances')),
-      body: instances.isEmpty
-          ? const Center(child: Text('No instances configured.'))
-          : ListView.builder(
-              itemCount: instances.length,
-              itemBuilder: (context, index) {
-                final instance = instances[index];
-                return _buildInstanceItem(
-                  context,
-                  ref,
-                  instance,
-                  instance.id == activeId,
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showInstanceDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Instance'),
+        onTap: () {
+          ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
+          ScaffoldMessenger.of(context).showQuickSnackBar(
+            SnackBar(content: Text('${instance.name} is now active')),
+          );
+        },
       ),
     );
   }
