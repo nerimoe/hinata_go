@@ -39,7 +39,7 @@ class ReaderPage extends HookConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.nfc,
+              Icons.contactless_outlined,
               color: nfcState.isScanning
                   ? colorScheme.primary
                   : colorScheme.onSurfaceVariant,

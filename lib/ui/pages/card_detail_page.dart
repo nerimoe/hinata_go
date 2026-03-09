@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../models/card/card.dart';
 import '../../models/card/aic.dart';
@@ -12,63 +13,55 @@ import '../../providers/settings_provider.dart';
 import '../../services/notification_service.dart';
 import '../widgets/save_card_dialog.dart';
 
-class CardDetailPage extends ConsumerStatefulWidget {
+class CardDetailPage extends HookConsumerWidget {
   final ICCard card;
 
   const CardDetailPage({super.key, required this.card});
 
   @override
-  ConsumerState<CardDetailPage> createState() => _CardDetailPageState();
-}
-
-class _CardDetailPageState extends ConsumerState<CardDetailPage> {
-  final bool _isSaving = false;
-
-  Future<void> _saveCard() async {
-    final success = await showDialog<bool>(
-      context: context,
-      builder: (context) =>
-          SaveCardDialog(card: widget.card, source: 'Scanned'),
-    );
-
-    if (success == true) {
-      // Dialog already shows snackbar and adds card
-    }
-  }
-
-  Future<void> _sendCard() async {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSavingState = useState(false);
     final enableSecondaryConfirmation = ref
-        .read(settingsProvider)
+        .watch(settingsProvider)
         .enableSecondaryConfirmation;
-    if (enableSecondaryConfirmation) {
-      final shouldSend = await showDialog<bool>(
+
+    Future<void> saveCard() async {
+      final success = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirm Send'),
-          content: Text(
-            'Send this ${widget.card.name} card to the active instance?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Send'),
-            ),
-          ],
-        ),
+        builder: (context) => SaveCardDialog(card: card, source: 'Scanned'),
       );
-      if (shouldSend != true) return;
+
+      if (success == true) {
+        // Dialog already shows snackbar and adds card
+      }
     }
 
-    await ref.read(cardSenderProvider.notifier).sendCard(widget.card);
-  }
+    Future<void> sendCard() async {
+      if (enableSecondaryConfirmation) {
+        final shouldSend = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Send'),
+            content: Text(
+              'Send this ${card.name} card to the active instance?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Send'),
+              ),
+            ],
+          ),
+        );
+        if (shouldSend != true) return;
+      }
 
-  @override
-  Widget build(BuildContext context) {
-    final card = widget.card;
+      await ref.read(cardSenderProvider.notifier).sendCard(card);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -103,10 +96,10 @@ class _CardDetailPageState extends ConsumerState<CardDetailPage> {
             ),
           ),
           _BottomAction(
-            onSend: _sendCard,
-            onSave: _saveCard,
+            onSend: sendCard,
+            onSave: saveCard,
             isSending: ref.watch(cardSenderProvider).isSending,
-            isSaving: _isSaving,
+            isSaving: isSavingState.value,
           ),
         ],
       ),

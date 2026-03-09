@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/card/card.dart';
@@ -7,7 +8,7 @@ import '../../models/card/saved_card.dart';
 import '../../providers/app_state_provider.dart';
 import '../../utils/snackbar_utils.dart';
 
-class SaveCardDialog extends ConsumerStatefulWidget {
+class SaveCardDialog extends HookConsumerWidget {
   final ICCard card;
   final String? initialName;
   final String source;
@@ -20,51 +21,27 @@ class SaveCardDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SaveCardDialog> createState() => _SaveCardDialogState();
-}
-
-class _SaveCardDialogState extends ConsumerState<SaveCardDialog> {
-  late TextEditingController _nameController;
-  late String _selectedFolderId;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(
-      text: widget.initialName ?? widget.card.name,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nameController = useTextEditingController(
+      text: initialName ?? card.name,
     );
-    _selectedFolderId = 'favorites_folder';
+    final selectedFolderIdState = useState('favorites_folder');
 
-    // Initial folder selection logic
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final folders = ref
-          .read(cardFoldersProvider)
-          .where((f) => f.id != 'history_folder')
-          .toList();
-      if (folders.isNotEmpty) {
-        setState(() {
-          if (folders.any((f) => f.id == 'favorites_folder')) {
-            _selectedFolderId = 'favorites_folder';
-          } else {
-            _selectedFolderId = folders.first.id;
-          }
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final folders = ref
         .watch(cardFoldersProvider)
         .where((f) => f.id != 'history_folder')
         .toList();
+
+    useEffect(() {
+      if (folders.isNotEmpty) {
+        if (folders.any((f) => f.id == 'favorites_folder')) {
+          selectedFolderIdState.value = 'favorites_folder';
+        } else {
+          selectedFolderIdState.value = folders.first.id;
+        }
+      }
+      return null;
+    }, []);
 
     return AlertDialog(
       title: const Text('Save to Folder'),
@@ -72,13 +49,13 @@ class _SaveCardDialogState extends ConsumerState<SaveCardDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
-            controller: _nameController,
+            controller: nameController,
             decoration: const InputDecoration(labelText: 'Name / Description'),
             autofocus: true,
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            initialValue: _selectedFolderId,
+            value: selectedFolderIdState.value,
             decoration: const InputDecoration(labelText: 'Folder'),
             items: folders.map((folder) {
               return DropdownMenuItem(
@@ -88,9 +65,7 @@ class _SaveCardDialogState extends ConsumerState<SaveCardDialog> {
             }).toList(),
             onChanged: (val) {
               if (val != null) {
-                setState(() {
-                  _selectedFolderId = val;
-                });
+                selectedFolderIdState.value = val;
               }
             },
           ),
@@ -103,19 +78,19 @@ class _SaveCardDialogState extends ConsumerState<SaveCardDialog> {
         ),
         FilledButton(
           onPressed: () {
-            if (_nameController.text.isNotEmpty) {
+            if (nameController.text.isNotEmpty) {
               final newCard = SavedCard(
                 id: const Uuid().v4(),
-                name: _nameController.text,
-                card: widget.card,
-                folderId: _selectedFolderId,
-                source: widget.source,
+                name: nameController.text,
+                card: card,
+                folderId: selectedFolderIdState.value,
+                source: source,
               );
               ref.read(savedCardsProvider.notifier).addCard(newCard);
               ScaffoldMessenger.of(context).showQuickSnackBar(
                 SnackBar(
                   content: Text(
-                    'Saved "${_nameController.text}" to ${folders.firstWhere((f) => f.id == _selectedFolderId).name}.',
+                    'Saved "${nameController.text}" to ${folders.firstWhere((f) => f.id == selectedFolderIdState.value).name}.',
                   ),
                 ),
               );

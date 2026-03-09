@@ -6,25 +6,21 @@ import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
 import '../widgets/save_card_dialog.dart';
 
-class ScanLogsPage extends ConsumerStatefulWidget {
+class ScanLogsPage extends HookConsumerWidget {
   const ScanLogsPage({super.key});
 
   @override
-  ConsumerState<ScanLogsPage> createState() => _ScanLogsPageState();
-}
-
-class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
-  void _showSaveToBagDialog(ScanLog log) {
-    showDialog(
-      context: context,
-      builder: (context) => SaveCardDialog(card: log.card, source: log.source),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final logs = ref.watch(scanLogsProvider);
     final reversedLogs = logs.reversed.toList();
+
+    void showSaveToBagDialog(ScanLog log) {
+      showDialog(
+        context: context,
+        builder: (context) =>
+            SaveCardDialog(card: log.card, source: log.source),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -43,13 +39,20 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
           ? const Center(child: Text('No scan history yet.'))
           : ListView.builder(
               itemCount: reversedLogs.length,
-              itemBuilder: (context, index) =>
-                  _buildLogItem(reversedLogs[index]),
+              itemBuilder: (context, index) => _buildLogItem(
+                context,
+                reversedLogs[index],
+                showSaveToBagDialog,
+              ),
             ),
     );
   }
 
-  Widget _buildLogItem(ScanLog log) {
+  Widget _buildLogItem(
+    BuildContext context,
+    ScanLog log,
+    void Function(ScanLog) onSave,
+  ) {
     String displaySource = log.source;
     if (log.source == 'NFC') {
       if (log.apiType != 'nfc') {
@@ -82,7 +85,7 @@ class _ScanLogsPageState extends ConsumerState<ScanLogsPage> {
       trailing: IconButton(
         icon: const Icon(Icons.save_alt),
         tooltip: 'Save to Saved Cards',
-        onPressed: () => _showSaveToBagDialog(log),
+        onPressed: () => onSave(log),
       ),
       onTap: () => context.push('/card_detail', extra: log.card),
     );

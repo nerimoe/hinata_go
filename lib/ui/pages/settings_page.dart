@@ -4,16 +4,11 @@ import '../../providers/settings_provider.dart';
 import '../../providers/app_update_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class SettingsPage extends ConsumerStatefulWidget {
+class SettingsPage extends HookConsumerWidget {
   const SettingsPage({super.key});
 
   @override
-  ConsumerState<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends ConsumerState<SettingsPage> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final updateState = ref.watch(appUpdateProvider);
 
