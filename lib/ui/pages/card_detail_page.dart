@@ -11,6 +11,7 @@ import '../../models/card/iso14443a.dart';
 import '../../providers/card_sender.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/notification_service.dart';
+import '../../l10n/l10n.dart';
 import '../widgets/save_card_dialog.dart';
 
 class CardDetailPage extends HookConsumerWidget {
@@ -41,18 +42,16 @@ class CardDetailPage extends HookConsumerWidget {
         final shouldSend = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Confirm Send'),
-            content: Text(
-              'Send this ${card.name} card to the active instance?',
-            ),
+            title: Text(context.l10n.confirmSend),
+            content: Text(context.l10n.confirmSendToActiveInstance(card.name)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Send'),
+                child: Text(context.l10n.send),
               ),
             ],
           ),
@@ -65,7 +64,7 @@ class CardDetailPage extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${card.name} Details'),
+        title: Text(context.l10n.cardDetails(card.name)),
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),
@@ -73,9 +72,9 @@ class CardDetailPage extends HookConsumerWidget {
               Clipboard.setData(ClipboardData(text: card.value ?? ''));
               ref
                   .read(notificationServiceProvider)
-                  .showSuccess('Value copied to clipboard');
+                  .showSuccess(context.l10n.valueCopiedToClipboard);
             },
-            tooltip: 'Copy Value',
+            tooltip: context.l10n.copyValue,
           ),
         ],
       ),
@@ -89,7 +88,7 @@ class CardDetailPage extends HookConsumerWidget {
                 children: [
                   _HeaderCard(card: card),
                   const SizedBox(height: 24),
-                  ..._buildCardSections(card),
+                  ..._buildCardSections(context, card),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -106,16 +105,22 @@ class CardDetailPage extends HookConsumerWidget {
     );
   }
 
-  List<Widget> _buildCardSections(ICCard card) {
+  List<Widget> _buildCardSections(BuildContext context, ICCard card) {
     final List<Widget> sections = [];
 
     if (card is Aic) {
       sections.add(
         _InfoSection(
-          title: 'Amusement IC Information',
+          title: context.l10n.amusementIcInfo,
           children: [
-            _InfoRow(label: 'Access Code', value: card.accessCodeString),
-            _InfoRow(label: 'Manufacturer', value: card.manufacturer),
+            _InfoRow(
+              label: context.l10n.accessCode,
+              value: card.accessCodeString,
+            ),
+            _InfoRow(
+              label: context.l10n.manufacturer,
+              value: card.manufacturer,
+            ),
           ],
         ),
       );
@@ -124,9 +129,12 @@ class CardDetailPage extends HookConsumerWidget {
     if (card is Aime && card is! Aic) {
       sections.add(
         _InfoSection(
-          title: 'Aime Information',
+          title: context.l10n.aimeInfo,
           children: [
-            _InfoRow(label: 'Access Code', value: card.accessCodeString),
+            _InfoRow(
+              label: context.l10n.accessCode,
+              value: card.accessCodeString,
+            ),
           ],
         ),
       );
@@ -135,12 +143,12 @@ class CardDetailPage extends HookConsumerWidget {
     if (card is Felica) {
       sections.add(
         _InfoSection(
-          title: 'FeliCa Technical Details',
+          title: context.l10n.felicaDetails,
           children: [
-            _InfoRow(label: 'IDm', value: card.idString),
-            _InfoRow(label: 'PMm', value: card.pmmString),
+            _InfoRow(label: context.l10n.idm, value: card.idString),
+            _InfoRow(label: context.l10n.pmm, value: card.pmmString),
             _InfoRow(
-              label: 'System Code',
+              label: context.l10n.systemCode,
               value: card.systemCode
                   .map((e) => e.toRadixString(16).padLeft(4, '0').toUpperCase())
                   .join(', '),
@@ -153,15 +161,15 @@ class CardDetailPage extends HookConsumerWidget {
     if (card is Banapass) {
       sections.add(
         _InfoSection(
-          title: 'Banapassport Data',
+          title: context.l10n.banapassData,
           children: [
             _InfoRow(
-              label: 'Block 1',
+              label: context.l10n.block1,
               value: card.value?.substring(0, 32) ?? '',
             ),
             if (card.block2 != null)
               _InfoRow(
-                label: 'Block 2',
+                label: context.l10n.block2,
                 value: card.value?.substring(32) ?? '',
               ),
           ],
@@ -172,16 +180,16 @@ class CardDetailPage extends HookConsumerWidget {
     if (card is Iso14443) {
       sections.add(
         _InfoSection(
-          title: 'ISO14443 Technical Details',
+          title: context.l10n.iso14443Details,
           children: [
-            _InfoRow(label: 'UID', value: card.idString),
+            _InfoRow(label: context.l10n.uid, value: card.idString),
             _InfoRow(
-              label: 'SAK',
+              label: context.l10n.sak,
               value:
                   '0x${card.sak.toRadixString(16).padLeft(2, '0').toUpperCase()}',
             ),
             _InfoRow(
-              label: 'ATQA',
+              label: context.l10n.atqa,
               value:
                   '0x${card.atqa.toRadixString(16).padLeft(4, '0').toUpperCase()}',
             ),
@@ -193,9 +201,12 @@ class CardDetailPage extends HookConsumerWidget {
     if (card is! Felica && card is! Iso14443) {
       sections.add(
         _InfoSection(
-          title: 'Technical Details',
+          title: context.l10n.technicalDetails,
           children: [
-            _InfoRow(label: 'ID / Value', value: card.value ?? card.idString),
+            _InfoRow(
+              label: context.l10n.idOrValue,
+              value: card.value ?? card.idString,
+            ),
           ],
         ),
       );
@@ -378,7 +389,9 @@ class _BottomAction extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.folder_special),
-              label: Text(isSaving ? 'SAVING...' : 'SAVE'),
+              label: Text(
+                isSaving ? context.l10n.savingUpper : context.l10n.saveUpper,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -402,7 +415,9 @@ class _BottomAction extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.send),
-              label: Text(isSending ? 'SENDING...' : 'SEND'),
+              label: Text(
+                isSending ? context.l10n.sendingUpper : context.l10n.sendUpper,
+              ),
             ),
           ),
         ],

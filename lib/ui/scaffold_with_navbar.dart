@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/app_update_provider.dart';
+import '../l10n/l10n.dart';
 
 class ScaffoldWithNavBar extends ConsumerWidget {
   const ScaffoldWithNavBar({required this.navigationShell, super.key});
@@ -41,6 +42,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     // Check if the current route containing this scaffold is actually the top-most route.
     // If something (like a dialog or CardDetail) is pushed on the root navigator,
     // isCurrent will be false, signaling that the scaffold is covered.
@@ -78,20 +80,20 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                 selectedIndex: navigationShell.currentIndex,
                 onDestinationSelected: _goBranch,
                 destinations: [
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.nfc),
-                    label: 'Reader',
+                    label: l10n.reader,
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.credit_card),
-                    label: 'Cards',
+                    label: l10n.cards,
                   ),
                   NavigationDestination(
                     icon: Badge(
                       isLabelVisible: ref.watch(appUpdateProvider).hasUpdate,
                       child: const Icon(Icons.settings),
                     ),
-                    label: 'Settings',
+                    label: l10n.settings,
                   ),
                 ],
               ),
@@ -106,13 +108,13 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                     onDestinationSelected: _goBranch,
                     labelType: NavigationRailLabelType.all,
                     destinations: [
-                      const NavigationRailDestination(
+                      NavigationRailDestination(
                         icon: Icon(Icons.nfc),
-                        label: Text('Reader'),
+                        label: Text(l10n.reader),
                       ),
                       NavigationRailDestination(
                         icon: Icon(Icons.credit_card),
-                        label: Text('Cards'),
+                        label: Text(l10n.cards),
                       ),
                       NavigationRailDestination(
                         icon: Badge(
@@ -121,7 +123,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                               .hasUpdate,
                           child: const Icon(Icons.settings),
                         ),
-                        label: const Text('Settings'),
+                        label: Text(l10n.settings),
                       ),
                     ],
                   ),

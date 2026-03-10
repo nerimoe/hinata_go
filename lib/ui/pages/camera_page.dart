@@ -7,6 +7,7 @@ import '../../models/card/aime.dart';
 import '../../models/card/scanned_card.dart';
 import '../../providers/nfc_provider.dart';
 import '../../utils/qr_handler.dart';
+import '../../l10n/l10n.dart';
 
 class CameraPage extends HookConsumerWidget {
   const CameraPage({super.key});
@@ -166,10 +167,10 @@ class CameraPage extends HookConsumerWidget {
       top: holeRect.bottom + 40, // 40px below the hole
       left: 0,
       right: 0,
-      child: const Center(
+      child: Center(
         child: Text(
-          'Scan QR Code',
-          style: TextStyle(
+          context.l10n.cameraScanInstruction,
+          style: const TextStyle(
             color: Colors.white38,
             fontSize: 18,
             fontWeight: FontWeight.w600,

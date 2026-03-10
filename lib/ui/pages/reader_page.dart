@@ -11,6 +11,8 @@ import '../../providers/card_sender.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/nfc_provider.dart';
 import '../../utils/icon_utils.dart';
+import '../../l10n/l10n.dart';
+import '../ui_text.dart';
 
 class ReaderPage extends HookConsumerWidget {
   const ReaderPage({super.key});
@@ -19,6 +21,7 @@ class ReaderPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeInstance = ref.watch(activeInstanceProvider);
     final scanLogs = ref.watch(scanLogsProvider).reversed.take(5).toList();
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
@@ -41,7 +44,7 @@ class ReaderPage extends HookConsumerWidget {
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
             onPressed: () => context.push('/camera'),
-            tooltip: 'Scan QR Code',
+            tooltip: l10n.scanQrCode,
           ),
         ],
       ),
@@ -73,6 +76,15 @@ class _NfcStatusPill extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nfcState = ref.watch(nfcProvider);
+    final l10n = context.l10n;
+    final status = switch (nfcState.status) {
+      NfcStatus.idle => nfcState.isIOS ? l10n.tapToScan : l10n.nfcInactive,
+      NfcStatus.tapToScan => l10n.tapToScan,
+      NfcStatus.unsupported => l10n.nfcDeviceNotSupported,
+      NfcStatus.disabled => l10n.nfcEnablePrompt,
+      NfcStatus.listening => l10n.nfcListening,
+      NfcStatus.error => l10n.nfcError(nfcState.errorMessage ?? ''),
+    };
     final colorScheme = Theme.of(context).colorScheme;
     final Color bgColor = nfcState.isScanning
         ? colorScheme.primaryContainer
@@ -103,8 +115,8 @@ class _NfcStatusPill extends ConsumerWidget {
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Text(
-                nfcState.status,
-                key: ValueKey(nfcState.status),
+                status,
+                key: ValueKey(status),
                 style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
               ),
             ),
@@ -203,17 +215,14 @@ class _NfcInfoText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final title = isIOS
-        ? (isScanning ? 'Scanning...' : 'Tap to Scan')
-        : (isScanning ? 'Ready to Scan' : 'NFC Inactive');
+        ? (isScanning ? l10n.scanning : l10n.tapToScan)
+        : (isScanning ? l10n.readyToScan : l10n.nfcInactive);
     final subtitle = isIOS
-        ? (isScanning
-              ? 'Hold your card near the top of your iPhone.'
-              : 'Tap this area to activate the NFC reader.')
-        : (isScanning
-              ? 'Hold your card near the NFC reader area of your device.'
-              : 'NFC service is currently unavailable or disabled.');
+        ? (isScanning ? l10n.holdCardNearTop : l10n.tapToActivateNfc)
+        : (isScanning ? l10n.holdCardNearReader : l10n.nfcUnavailable);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -345,7 +354,7 @@ class _NoInstanceRow extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            'No active instance selected.\nTap to select.',
+            context.l10n.noActiveInstanceSelectedTap,
             style: TextStyle(color: fgColor, fontWeight: FontWeight.bold),
           ),
         ),
@@ -367,9 +376,9 @@ class _HistorySection extends StatelessWidget {
         const _HistoryHeader(),
         const Divider(),
         if (scanLogs.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Center(child: Text('No recent scans.')),
+          Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Center(child: Text(context.l10n.noRecentScans)),
           )
         else
           ListView.builder(
@@ -391,10 +400,13 @@ class _HistoryHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('Recent Scans', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          context.l10n.recentScans,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         TextButton(
           onPressed: () => context.push('/scan_logs'),
-          child: const Text('View All Logs'),
+          child: Text(context.l10n.viewAllLogs),
         ),
       ],
     );
@@ -414,14 +426,7 @@ class _HistoryItem extends ConsumerWidget {
         senderState.isSending && senderState.triggerId == log.id;
     final isAnyCardSending = senderState.isSending;
 
-    String displaySource = log.source;
-    if (log.source == 'NFC') {
-      if (log.apiType != 'nfc') {
-        displaySource = 'NFC (${log.displayType})';
-      }
-    } else if (log.source == 'Direct') {
-      displaySource = 'Saved Cards';
-    }
+    final displaySource = scanSourceDisplayName(context, log);
 
     IconData sourceIcon = Icons.qr_code;
     if (log.source == 'NFC') sourceIcon = Icons.nfc;
@@ -459,7 +464,7 @@ class _HistoryItem extends ConsumerWidget {
                           .read(cardSenderProvider.notifier)
                           .sendCard(log.card, triggerId: log.id);
                     },
-              tooltip: 'Resend to active instance',
+              tooltip: context.l10n.resendToActiveInstance,
               color: isAnyCardSending ? colorScheme.outline : null,
             ),
       onTap: () => context.push('/card_detail', extra: log.card),

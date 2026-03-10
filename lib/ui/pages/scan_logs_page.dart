@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/scan_log.dart';
 import '../../providers/app_state_provider.dart';
+import '../../l10n/l10n.dart';
+import '../ui_text.dart';
 import '../widgets/save_card_dialog.dart';
 
 class ScanLogsPage extends HookConsumerWidget {
@@ -11,6 +13,7 @@ class ScanLogsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final logs = ref.watch(scanLogsProvider);
     final reversedLogs = logs.reversed.toList();
 
@@ -24,11 +27,11 @@ class ScanLogsPage extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan History Logs'),
+        title: Text(l10n.scanHistoryLogs),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep),
-            tooltip: 'Clear History',
+            tooltip: l10n.clearHistory,
             onPressed: () {
               ref.read(scanLogsProvider.notifier).clearLogs();
             },
@@ -36,7 +39,7 @@ class ScanLogsPage extends HookConsumerWidget {
         ],
       ),
       body: reversedLogs.isEmpty
-          ? const Center(child: Text('No scan history yet.'))
+          ? Center(child: Text(l10n.noScanHistoryYet))
           : ListView.builder(
               itemCount: reversedLogs.length,
               itemBuilder: (context, index) => _buildLogItem(
@@ -53,14 +56,7 @@ class ScanLogsPage extends HookConsumerWidget {
     ScanLog log,
     void Function(ScanLog) onSave,
   ) {
-    String displaySource = log.source;
-    if (log.source == 'NFC') {
-      if (log.apiType != 'nfc') {
-        displaySource = 'NFC (${log.displayType})';
-      }
-    } else if (log.source == 'Direct') {
-      displaySource = 'Saved Cards';
-    }
+    final displaySource = scanSourceDisplayName(context, log);
 
     IconData sourceIcon = Icons.qr_code;
     if (log.source == 'NFC') sourceIcon = Icons.nfc;
@@ -79,12 +75,12 @@ class ScanLogsPage extends HookConsumerWidget {
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
-        'Source: $displaySource\nTime: ${log.timestamp.toString().substring(0, 19)}',
+        '${context.l10n.sourceLine(displaySource)}\n${context.l10n.timeLine(log.timestamp.toString().substring(0, 19))}',
       ),
       isThreeLine: true,
       trailing: IconButton(
         icon: const Icon(Icons.save_alt),
-        tooltip: 'Save to Saved Cards',
+        tooltip: context.l10n.saveToSavedCards,
         onPressed: () => onSave(log),
       ),
       onTap: () => context.push('/card_detail', extra: log.card),

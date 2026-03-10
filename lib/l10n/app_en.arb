@@ -1,0 +1,177 @@
+{
+  "@@locale": "en",
+  "appTitle": "SEGA NFC",
+  "settings": "Settings",
+  "secondaryConfirmation": "Secondary Confirmation",
+  "secondaryConfirmationDescription": "Ask for confirmation before sending card data",
+  "about": "About",
+  "updateToVersion": "UPDATE TO {version}",
+  "@updateToVersion": {
+    "placeholders": {
+      "version": {}
+    }
+  },
+  "language": "Language",
+  "languageDescription": "Choose app display language",
+  "languageSystem": "System",
+  "languageEnglishNative": "English",
+  "languageChineseNative": "简体中文",
+  "reader": "Reader",
+  "cards": "Cards",
+  "scanQrCode": "Scan QR Code",
+  "scanning": "Scanning...",
+  "tapToScan": "Tap to Scan",
+  "readyToScan": "Ready to Scan",
+  "nfcInactive": "NFC Inactive",
+  "holdCardNearTop": "Hold your card near the top of your iPhone.",
+  "tapToActivateNfc": "Tap this area to activate the NFC reader.",
+  "holdCardNearReader": "Hold your card near the NFC reader area of your device.",
+  "nfcUnavailable": "NFC service is currently unavailable or disabled.",
+  "noActiveInstanceSelectedTap": "No active instance selected.\nTap to select.",
+  "noRecentScans": "No recent scans.",
+  "recentScans": "Recent Scans",
+  "viewAllLogs": "View All Logs",
+  "resendToActiveInstance": "Resend to active instance",
+  "scanHistoryLogs": "Scan History Logs",
+  "clearHistory": "Clear History",
+  "noScanHistoryYet": "No scan history yet.",
+  "savedCardsSource": "Saved Cards",
+  "sourceLine": "Source: {source}",
+  "@sourceLine": {
+    "placeholders": {
+      "source": {}
+    }
+  },
+  "timeLine": "Time: {time}",
+  "@timeLine": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "saveToSavedCards": "Save to Saved Cards",
+  "savedCards": "Saved Cards",
+  "newFolder": "New Folder",
+  "noCardsInFolder": "No cards in this folder.",
+  "addCard": "Add Card",
+  "cannotDeleteDefaultFolders": "Cannot delete default folders.",
+  "deleteFolder": "Delete Folder?",
+  "deleteFolderMessage": "Are you sure you want to delete \"{folderName}\" and all cards inside it?",
+  "@deleteFolderMessage": {
+    "placeholders": {
+      "folderName": {}
+    }
+  },
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "quickSend": "Quick Send",
+  "addCardManually": "Add Card Manually",
+  "nameDescription": "Name / Description",
+  "folder": "Folder",
+  "newFolderOption": "+ New Folder",
+  "accessCode": "Access Code",
+  "save": "Save",
+  "folderName": "Folder Name",
+  "create": "Create",
+  "confirmSend": "Confirm Send",
+  "confirmSendWithValue": "Are you sure you want to send this card?\nValue: {value}",
+  "@confirmSendWithValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "remoteInstances": "Remote Instances",
+  "noInstancesConfigured": "No instances configured.",
+  "addInstance": "Add Instance",
+  "instanceNowActive": "{name} is now active",
+  "@instanceNowActive": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "invalidUrl": "Please enter a valid URL (http/https)",
+  "editInstance": "Edit Instance",
+  "nameExample": "Name (e.g. maimaiDX)",
+  "webhookUrl": "Webhook URL (http://...)",
+  "selectIcon": "Select Icon:",
+  "confirmSendToActiveInstance": "Send this {cardName} card to the active instance?",
+  "@confirmSendToActiveInstance": {
+    "placeholders": {
+      "cardName": {}
+    }
+  },
+  "cardDetails": "{cardName} Details",
+  "@cardDetails": {
+    "placeholders": {
+      "cardName": {}
+    }
+  },
+  "valueCopiedToClipboard": "Value copied to clipboard",
+  "copyValue": "Copy Value",
+  "amusementIcInfo": "Amusement IC Information",
+  "manufacturer": "Manufacturer",
+  "aimeInfo": "Aime Information",
+  "felicaDetails": "FeliCa Technical Details",
+  "idm": "IDm",
+  "pmm": "PMm",
+  "systemCode": "System Code",
+  "banapassData": "Banapassport Data",
+  "block1": "Block 1",
+  "block2": "Block 2",
+  "iso14443Details": "ISO14443 Technical Details",
+  "uid": "UID",
+  "sak": "SAK",
+  "atqa": "ATQA",
+  "technicalDetails": "Technical Details",
+  "idOrValue": "ID / Value",
+  "savingUpper": "SAVING...",
+  "saveUpper": "SAVE",
+  "sendingUpper": "SENDING...",
+  "sendUpper": "SEND",
+  "send": "Send",
+  "saveToFolder": "Save to Folder",
+  "savedToFolder": "Saved \"{name}\" to {folder}.",
+  "@savedToFolder": {
+    "placeholders": {
+      "name": {},
+      "folder": {}
+    }
+  },
+  "cameraScanInstruction": "Scan QR Code",
+  "historyFolder": "History",
+  "favoritesFolder": "Favorites",
+  "sourceNfcWithType": "NFC ({displayType})",
+  "@sourceNfcWithType": {
+    "placeholders": {
+      "displayType": {}
+    }
+  },
+  "nfcDeviceNotSupported": "Your device does not support NFC",
+  "nfcEnablePrompt": "Please enable NFC",
+  "nfcListening": "Listening for NFC...",
+  "nfcError": "Error: {error}",
+  "@nfcError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "nfcIosAlert": "Hold your card near the top of your iPhone",
+  "noActiveInstanceSelected": "No active instance selected.",
+  "sendingToInstance": "Sending to {name}...",
+  "@sendingToInstance": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "successSentToInstance": "Success: Sent to {name}",
+  "@successSentToInstance": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "failedSentToInstance": "Failed: Could not send to {name}",
+  "@failedSentToInstance": {
+    "placeholders": {
+      "name": {}
+    }
+  }
+}

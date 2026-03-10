@@ -1,4 +1,5 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'storage_provider.dart';
 
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(() {
@@ -7,14 +8,60 @@ final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(() {
 
 class AppSettings {
   final bool enableSecondaryConfirmation;
+  final AppLanguage language;
 
-  AppSettings({required this.enableSecondaryConfirmation});
+  AppSettings({
+    required this.enableSecondaryConfirmation,
+    required this.language,
+  });
 
-  AppSettings copyWith({bool? enableSecondaryConfirmation}) {
+  AppSettings copyWith({
+    bool? enableSecondaryConfirmation,
+    AppLanguage? language,
+  }) {
     return AppSettings(
       enableSecondaryConfirmation:
           enableSecondaryConfirmation ?? this.enableSecondaryConfirmation,
+      language: language ?? this.language,
     );
+  }
+}
+
+enum AppLanguage { system, english, simplifiedChinese }
+
+extension AppLanguageX on AppLanguage {
+  Locale? get locale {
+    switch (this) {
+      case AppLanguage.system:
+        return null;
+      case AppLanguage.english:
+        return const Locale('en');
+      case AppLanguage.simplifiedChinese:
+        return const Locale('zh');
+    }
+  }
+
+  String get storageValue {
+    switch (this) {
+      case AppLanguage.system:
+        return 'system';
+      case AppLanguage.english:
+        return 'en';
+      case AppLanguage.simplifiedChinese:
+        return 'zh';
+    }
+  }
+
+  static AppLanguage fromStorageValue(String? value) {
+    switch (value) {
+      case 'en':
+        return AppLanguage.english;
+      case 'zh':
+        return AppLanguage.simplifiedChinese;
+      case 'system':
+      default:
+        return AppLanguage.system;
+    }
   }
 }
 
@@ -26,6 +73,11 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   void updateEnableSecondaryConfirmation(bool value) {
     state = state.copyWith(enableSecondaryConfirmation: value);
+    ref.read(storageProvider).saveSettings(state);
+  }
+
+  void updateLanguage(AppLanguage language) {
+    state = state.copyWith(language: language);
     ref.read(storageProvider).saveSettings(state);
   }
 }

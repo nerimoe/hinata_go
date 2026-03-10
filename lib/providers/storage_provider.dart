@@ -28,6 +28,7 @@ class StorageService {
   static const String _kActiveInstanceIdKey = 'active_instance_id';
   static const String _kEnableSecondaryConfirmationKey =
       'enable_secondary_confirmation';
+  static const String _kAppLanguageKey = 'app_language';
 
   // --- Instances ---
 
@@ -129,6 +130,9 @@ class StorageService {
 
     return AppSettings(
       enableSecondaryConfirmation: enableSecondaryConfirmation,
+      language: AppLanguageX.fromStorageValue(
+        _prefs.getString(_kAppLanguageKey),
+      ),
     );
   }
 
@@ -137,5 +141,6 @@ class StorageService {
       _kEnableSecondaryConfirmationKey,
       settings.enableSecondaryConfirmation,
     );
+    await _prefs.setString(_kAppLanguageKey, settings.language.storageValue);
   }
 }

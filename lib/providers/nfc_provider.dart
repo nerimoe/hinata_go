@@ -12,26 +12,42 @@ import '../models/card/saved_card.dart';
 import '../models/scan_log.dart';
 import '../navigation/router.dart';
 import '../services/nfc_service.dart';
+import '../services/notification_service.dart';
 import 'card_sender.dart';
 import 'app_state_provider.dart';
 import 'settings_provider.dart';
 
+enum NfcStatus { idle, tapToScan, unsupported, disabled, listening, error }
+
 class NfcState {
   final bool isScanning;
   final bool isProcessing;
-  final String status;
+  final bool isIOS;
+  final NfcStatus status;
+  final String? errorMessage;
 
   NfcState({
     this.isScanning = false,
     this.isProcessing = false,
-    this.status = 'Idle',
+    this.isIOS = false,
+    this.status = NfcStatus.idle,
+    this.errorMessage,
   });
 
-  NfcState copyWith({bool? isScanning, bool? isProcessing, String? status}) {
+  NfcState copyWith({
+    bool? isScanning,
+    bool? isProcessing,
+    bool? isIOS,
+    NfcStatus? status,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
     return NfcState(
       isScanning: isScanning ?? this.isScanning,
       isProcessing: isProcessing ?? this.isProcessing,
+      isIOS: isIOS ?? this.isIOS,
       status: status ?? this.status,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
@@ -66,14 +82,15 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       stopSession();
     });
 
-    // Start session initially only on Android. iOS requires manual trigger.
-    if (Platform.isAndroid) {
+    final isIOS = !kIsWeb && Platform.isIOS;
+    if (!kIsWeb && Platform.isAndroid) {
       Future.microtask(() => startSession());
-    } else {
-      state = NfcState(status: 'Tap to Scan');
     }
 
-    return NfcState();
+    return NfcState(
+      isIOS: isIOS,
+      status: isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
+    );
   }
 
   @override
@@ -94,25 +111,32 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       NFCAvailability availability = await FlutterNfcKit.nfcAvailability;
       if (availability == NFCAvailability.not_supported) {
         _isStarting = false;
-        state = state.copyWith(status: 'Your device does not support NFC');
+        state = state.copyWith(status: NfcStatus.unsupported, clearError: true);
         return;
       }
 
       if (availability == NFCAvailability.disabled) {
         _isStarting = false;
-        state = state.copyWith(status: 'Please enable NFC');
+        state = state.copyWith(status: NfcStatus.disabled, clearError: true);
         return;
       }
 
       _isStarting = false;
-      state = state.copyWith(isScanning: true, status: 'Listening for NFC...');
+      state = state.copyWith(
+        isScanning: true,
+        status: NfcStatus.listening,
+        clearError: true,
+      );
 
       // iOS uses a system modal, so we typically do a single poll.
       // Android uses continuous background scanning.
       if (Platform.isIOS) {
         try {
+          final iosAlert =
+              ref.read(notificationServiceProvider).l10n?.nfcIosAlert ??
+              'Hold your card near the top of your iPhone';
           NFCTag tag = await FlutterNfcKit.poll(
-            iosAlertMessage: 'Hold your card near the top of your iPhone',
+            iosAlertMessage: iosAlert,
             readIso18092: true,
             readIso14443B: false,
           );
@@ -141,7 +165,11 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
       }
     } catch (e) {
       _isStarting = false;
-      state = state.copyWith(isScanning: false, status: 'Error: $e');
+      state = state.copyWith(
+        isScanning: false,
+        status: NfcStatus.error,
+        errorMessage: e.toString(),
+      );
     } finally {
       if (state.isScanning && Platform.isAndroid) {
         stopSession();
@@ -152,7 +180,8 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
   Future<void> stopSession() async {
     state = state.copyWith(
       isScanning: false,
-      status: Platform.isIOS ? 'Tap to Scan' : 'Idle',
+      status: state.isIOS ? NfcStatus.tapToScan : NfcStatus.idle,
+      clearError: true,
     );
     try {
       await FlutterNfcKit.finish();

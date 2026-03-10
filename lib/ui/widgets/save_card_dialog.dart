@@ -7,6 +7,8 @@ import '../../models/card/card.dart';
 import '../../models/card/saved_card.dart';
 import '../../providers/app_state_provider.dart';
 import '../../utils/snackbar_utils.dart';
+import '../../l10n/l10n.dart';
+import '../ui_text.dart';
 
 class SaveCardDialog extends HookConsumerWidget {
   final ICCard card;
@@ -44,23 +46,25 @@ class SaveCardDialog extends HookConsumerWidget {
     }, []);
 
     return AlertDialog(
-      title: const Text('Save to Folder'),
+      title: Text(context.l10n.saveToFolder),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: nameController,
-            decoration: const InputDecoration(labelText: 'Name / Description'),
+            decoration: InputDecoration(
+              labelText: context.l10n.nameDescription,
+            ),
             autofocus: true,
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
-            value: selectedFolderIdState.value,
-            decoration: const InputDecoration(labelText: 'Folder'),
+            initialValue: selectedFolderIdState.value,
+            decoration: InputDecoration(labelText: context.l10n.folder),
             items: folders.map((folder) {
               return DropdownMenuItem(
                 value: folder.id,
-                child: Text(folder.name),
+                child: Text(folderDisplayName(context, folder.id, folder.name)),
               );
             }).toList(),
             onChanged: (val) {
@@ -74,7 +78,7 @@ class SaveCardDialog extends HookConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -90,14 +94,25 @@ class SaveCardDialog extends HookConsumerWidget {
               ScaffoldMessenger.of(context).showQuickSnackBar(
                 SnackBar(
                   content: Text(
-                    'Saved "${nameController.text}" to ${folders.firstWhere((f) => f.id == selectedFolderIdState.value).name}.',
+                    context.l10n.savedToFolder(
+                      nameController.text,
+                      folderDisplayName(
+                        context,
+                        selectedFolderIdState.value,
+                        folders
+                            .firstWhere(
+                              (f) => f.id == selectedFolderIdState.value,
+                            )
+                            .name,
+                      ),
+                    ),
                   ),
                 ),
               );
               Navigator.pop(context, true);
             }
           },
-          child: const Text('Save'),
+          child: Text(context.l10n.save),
         ),
       ],
     );

@@ -13,6 +13,8 @@ import '../../providers/card_sender.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/notification_service.dart';
+import '../../l10n/l10n.dart';
+import '../ui_text.dart';
 
 class SavedCardsPage extends HookConsumerWidget {
   const SavedCardsPage({super.key});
@@ -63,20 +65,22 @@ class SavedCardsPage extends HookConsumerWidget {
     if (folder.id == 'history_folder' || folder.id == 'favorites_folder') {
       ref
           .read(notificationServiceProvider)
-          .showError('Cannot delete default folders.');
+          .showError(context.l10n.cannotDeleteDefaultFolders);
       return;
     }
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Folder?'),
+        title: Text(context.l10n.deleteFolder),
         content: Text(
-          'Are you sure you want to delete "${folder.name}" and all cards inside it?',
+          context.l10n.deleteFolderMessage(
+            folderDisplayName(context, folder.id, folder.name),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => _performDeleteFolder(
@@ -85,7 +89,7 @@ class SavedCardsPage extends HookConsumerWidget {
               folder.id,
               setSelectedFolderId,
             ),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -173,7 +177,7 @@ class SavedCardsPage extends HookConsumerWidget {
                 onPressed: isAnyCardSending
                     ? null
                     : () => _sendCardData(context, ref, card),
-                tooltip: 'Quick Send',
+                tooltip: context.l10n.quickSend,
                 color: isAnyCardSending ? colorScheme.outline : null,
               ),
         onTap: () => context.push('/card_detail', extra: card.card),
@@ -187,6 +191,7 @@ class SavedCardsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final selectedFolderIdState = useState('favorites_folder');
     final folders = ref.watch(cardFoldersProvider);
     final allCards = ref.watch(savedCardsProvider);
@@ -196,7 +201,7 @@ class SavedCardsPage extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Saved Cards'),
+        title: Text(l10n.savedCards),
         actions: [
           IconButton(
             icon: const Icon(Icons.create_new_folder),
@@ -204,7 +209,7 @@ class SavedCardsPage extends HookConsumerWidget {
               context,
               (newId) => selectedFolderIdState.value = newId,
             ),
-            tooltip: 'New Folder',
+            tooltip: l10n.newFolder,
           ),
         ],
       ),
@@ -216,7 +221,7 @@ class SavedCardsPage extends HookConsumerWidget {
           children: [
             _buildFolderSelectionStrip(ref, folders, selectedFolderIdState),
             const Divider(height: 1),
-            _buildCardsList(ref, folderCards),
+            _buildCardsList(context, ref, folderCards),
           ],
         ),
       ),
@@ -281,7 +286,7 @@ class SavedCardsPage extends HookConsumerWidget {
                 (newId) => selectedFolderIdState.value = newId,
               ),
               child: FilterChip(
-                label: Text(folder.name),
+                label: Text(folderDisplayName(context, folder.id, folder.name)),
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {
@@ -296,10 +301,14 @@ class SavedCardsPage extends HookConsumerWidget {
     );
   }
 
-  Widget _buildCardsList(WidgetRef ref, List<SavedCard> folderCards) {
+  Widget _buildCardsList(
+    BuildContext context,
+    WidgetRef ref,
+    List<SavedCard> folderCards,
+  ) {
     return Expanded(
       child: folderCards.isEmpty
-          ? const Center(child: Text('No cards in this folder.'))
+          ? Center(child: Text(context.l10n.noCardsInFolder))
           : ListView.builder(
               itemCount: folderCards.length,
               itemBuilder: (context, index) =>
@@ -320,7 +329,7 @@ class SavedCardsPage extends HookConsumerWidget {
         (newId) => selectedFolderIdState.value = newId,
       ),
       icon: const Icon(Icons.add),
-      label: const Text('Add Card'),
+      label: Text(context.l10n.addCard),
     );
   }
 }
@@ -385,34 +394,36 @@ class _AddCardDialog extends HookConsumerWidget {
         .toList();
 
     return AlertDialog(
-      title: const Text('Add Card Manually'),
+      title: Text(context.l10n.addCardManually),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name / Description',
+              decoration: InputDecoration(
+                labelText: context.l10n.nameDescription,
               ),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               key: ValueKey(selectedFolderIdState.value),
               initialValue: selectedFolderIdState.value,
-              decoration: const InputDecoration(labelText: 'Folder'),
+              decoration: InputDecoration(labelText: context.l10n.folder),
               items: [
                 ...folders.map(
                   (folder) => DropdownMenuItem(
                     value: folder.id,
-                    child: Text(folder.name),
+                    child: Text(
+                      folderDisplayName(context, folder.id, folder.name),
+                    ),
                   ),
                 ),
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: 'CREATE_NEW',
                   child: Text(
-                    '+ New Folder',
-                    style: TextStyle(color: Colors.blue),
+                    context.l10n.newFolderOption,
+                    style: const TextStyle(color: Colors.blue),
                   ),
                 ),
               ],
@@ -428,7 +439,7 @@ class _AddCardDialog extends HookConsumerWidget {
             const SizedBox(height: 10),
             TextField(
               controller: valueController,
-              decoration: const InputDecoration(labelText: 'Access Code'),
+              decoration: InputDecoration(labelText: context.l10n.accessCode),
               keyboardType: TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -441,9 +452,9 @@ class _AddCardDialog extends HookConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: onSave, child: const Text('Save')),
+        FilledButton(onPressed: onSave, child: Text(context.l10n.save)),
       ],
     );
   }
@@ -468,17 +479,17 @@ class _AddFolderDialog extends HookConsumerWidget {
     }
 
     return AlertDialog(
-      title: const Text('New Folder'),
+      title: Text(context.l10n.newFolder),
       content: TextField(
         controller: nameController,
-        decoration: const InputDecoration(labelText: 'Folder Name'),
+        decoration: InputDecoration(labelText: context.l10n.folderName),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: onCreate, child: const Text('Create')),
+        FilledButton(onPressed: onCreate, child: Text(context.l10n.create)),
       ],
     );
   }
@@ -491,18 +502,16 @@ class _ConfirmSendDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Confirm Send'),
-      content: Text(
-        'Are you sure you want to send this card?\nValue: ${card.showValue}',
-      ),
+      title: Text(context.l10n.confirmSend),
+      content: Text(context.l10n.confirmSendWithValue(card.showValue)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Send'),
+          child: Text(context.l10n.send),
         ),
       ],
     );

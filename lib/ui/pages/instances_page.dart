@@ -8,6 +8,7 @@ import '../../providers/app_state_provider.dart';
 import '../../utils/validators.dart';
 import '../../utils/icon_utils.dart';
 import '../../utils/snackbar_utils.dart';
+import '../../l10n/l10n.dart';
 
 class InstancesPage extends HookConsumerWidget {
   const InstancesPage({super.key});
@@ -24,13 +25,14 @@ class InstancesPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final instances = ref.watch(instancesProvider);
     final activeId = ref.watch(activeInstanceIdProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Remote Instances')),
+      appBar: AppBar(title: Text(l10n.remoteInstances)),
       body: instances.isEmpty
-          ? const Center(child: Text('No instances configured.'))
+          ? Center(child: Text(l10n.noInstancesConfigured))
           : ListView.builder(
               itemCount: instances.length,
               itemBuilder: (context, index) {
@@ -45,7 +47,7 @@ class InstancesPage extends HookConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showInstanceDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add Instance'),
+        label: Text(l10n.addInstance),
       ),
     );
   }
@@ -116,7 +118,9 @@ class _InstanceItem extends ConsumerWidget {
         onTap: () {
           ref.read(activeInstanceIdProvider.notifier).setActiveId(instance.id);
           ScaffoldMessenger.of(context).showQuickSnackBar(
-            SnackBar(content: Text('${instance.name} is now active')),
+            SnackBar(
+              content: Text(context.l10n.instanceNowActive(instance.name)),
+            ),
           );
         },
       ),
@@ -144,11 +148,9 @@ class _InstanceDialog extends HookConsumerWidget {
 
       final isValidUrl = Validators.isValidUrl(url);
       if (!isValidUrl) {
-        ScaffoldMessenger.of(context).showQuickSnackBar(
-          const SnackBar(
-            content: Text('Please enter a valid URL (http/https)'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showQuickSnackBar(SnackBar(content: Text(context.l10n.invalidUrl)));
         return;
       }
 
@@ -175,29 +177,27 @@ class _InstanceDialog extends HookConsumerWidget {
     final isEditing = existingInstance != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Instance' : 'Add Instance'),
+      title: Text(
+        isEditing ? context.l10n.editInstance : context.l10n.addInstance,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name (e.g. maimaiDX)',
-              ),
+              decoration: InputDecoration(labelText: context.l10n.nameExample),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: urlController,
-              decoration: const InputDecoration(
-                labelText: 'Webhook URL (http://...)',
-              ),
+              decoration: InputDecoration(labelText: context.l10n.webhookUrl),
               keyboardType: TextInputType.url,
             ),
             const SizedBox(height: 10),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
-              child: Text('Select Icon:'),
+              child: Text(context.l10n.selectIcon),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -225,9 +225,9 @@ class _InstanceDialog extends HookConsumerWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: onSave, child: const Text('Save')),
+        FilledButton(onPressed: onSave, child: Text(context.l10n.save)),
       ],
     );
   }
