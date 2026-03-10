@@ -33,7 +33,7 @@ jobs:
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --split-debug-info --obfuscate --split-per-abi --release
         env:
           ANDROID_KEYSTORE_PATH: "release.keystore"
           ANDROID_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -86,7 +86,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/app/outputs/flutter-apk/*.apk
           tag_name: ${{ steps.meta.outputs.tag_name }}
           name: ${{ steps.meta.outputs.mode_title }}
           prerelease: ${{ steps.meta.outputs.is_prerelease == 'true' }}
