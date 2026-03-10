@@ -1,5 +1,5 @@
 # HINATA Go
-配合 HINATA AimeIO 让你的手机变成刷卡器或扫码游玩舞萌dx，并可以与 HINATA 读卡器等设备协同使用。
+配合 HINATA AimeIO 让你的手机变成刷卡器或扫码游玩家用街机游戏，并可以与各种其他设备协同使用。
 
 ## Downloads
 * iOS版：[TestFlight](https://testflight.apple.com/join/t8TYcRw6)
