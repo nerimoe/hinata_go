@@ -2,7 +2,7 @@ name: Flutter Android Build & Auto Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -20,13 +20,13 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Decode Keystore
@@ -44,17 +44,17 @@ jobs:
         id: meta
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PUB_VER=$(grep "^version:" pubspec.yaml | sed 's/version://' | tr -d ' "' | cut -d'+' -f1 | tr -d '\r')
           COMMIT_SHORT=$(git rev-parse --short HEAD | tr -d '\r')
-          
+
           LATEST_TAG=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
           CLEAN_LATEST=$(echo "${LATEST_TAG#v}" | tr -d '\r')
 
           CHANGELOG="自动构建产物"
           IS_PRERELEASE=true
-          
+
           if [ "$PUB_VER" == "$CLEAN_LATEST" ]; then
             NEW_TAG="pre-${PUB_VER}-${COMMIT_SHORT}"
             TITLE="Pre-release ${PUB_VER} (${COMMIT_SHORT})"
@@ -92,7 +92,7 @@ jobs:
           prerelease: ${{ steps.meta.outputs.is_prerelease == 'true' }}
           body: |
             ${{ steps.meta.outputs.changelog }}
-            
+
             ---
             **Build Info**: `${{ github.sha }}`
         env:
