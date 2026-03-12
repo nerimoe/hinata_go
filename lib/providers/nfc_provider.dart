@@ -139,6 +139,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
             iosAlertMessage: iosAlert,
             readIso18092: true,
             readIso14443B: false,
+            readIso15693: true,
           );
           await _onTagDiscovered(tag);
         } catch (e) {
@@ -153,6 +154,7 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
             NFCTag tag = await FlutterNfcKit.poll(
               readIso18092: true,
               readIso14443B: false,
+              readIso15693: true,
             );
             await _onTagDiscovered(tag);
           } catch (e) {

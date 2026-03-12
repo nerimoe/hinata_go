@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
+import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/remote_instance.dart';
 import 'spiceapi/spiceapi.dart';
@@ -35,6 +36,8 @@ class ApiService {
           : _sendHttpCardData(instance: instance, card: card);
     } on TimeoutException catch (_) {
       return _handleTimeout(instance);
+    } on FormatException catch (e) {
+      return ApiServiceResult(success: false, errorMessage: e.message);
     } on SocketException catch (e) {
       return _handleSocketError(instance, e);
     } catch (e, stackTrace) {
@@ -63,6 +66,13 @@ class ApiService {
     required RemoteInstance instance,
     required ICCard card,
   }) async {
+    if (card is Iso15693) {
+      return ApiServiceResult(
+        success: false,
+        errorMessage: 'HTTP instances do not accept ISO15693 cards',
+      );
+    }
+
     final payload = {'type': card.type, 'value': card.value};
     log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
 
@@ -100,11 +110,12 @@ class ApiService {
     required RemoteInstance instance,
     required ICCard card,
   }) async {
-    if (card is! Felica) {
-      log('Card is not Felica, skipping SpiceAPI request.');
+    final cardId = _resolveSpiceApiCardId(card);
+    if (cardId == null) {
+      log('Card type ${card.runtimeType} is not supported by SpiceAPI.');
       return ApiServiceResult(
         success: false,
-        errorMessage: 'SpiceAPI only supports Felica cards',
+        errorMessage: 'SpiceAPI only supports Felica and ISO15693 cards',
       );
     }
 
@@ -122,12 +133,30 @@ class ApiService {
       await cardInsert(
         connection,
         unit,
-        card.idString,
+        cardId,
       ).timeout(const Duration(seconds: 10));
       return ApiServiceResult(success: true);
     } finally {
       connection.dispose();
     }
+  }
+
+  String? _resolveSpiceApiCardId(ICCard card) {
+    if (card is Felica) {
+      return card.idString;
+    }
+
+    if (card is Iso15693) {
+      final uid = card.idString.toUpperCase();
+      if (!uid.startsWith('E004')) {
+        throw const FormatException(
+          'ISO15693 card UID must start with E004 for SpiceAPI',
+        );
+      }
+      return uid;
+    }
+
+    return null;
   }
 
   ApiServiceResult _handleTimeout(RemoteInstance instance) {

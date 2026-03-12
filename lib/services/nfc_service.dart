@@ -8,6 +8,7 @@ import '../models/card/aic.dart';
 import '../models/card/aime.dart';
 import '../models/card/banapass.dart';
 import '../models/card/felica.dart';
+import '../models/card/iso15693.dart';
 import '../models/card/iso14443a.dart';
 import '../utils/spad0.dart';
 
@@ -25,6 +26,10 @@ Future<ScannedCard?> handleNfcTag(NFCTag tag) async {
     return await _handleFelica(tag);
   }
 
+  if (tag.type == NFCTagType.iso15693) {
+    return _handleIso15693(tag);
+  }
+
   // Try Mifare Classic / ISO14443-4
   if (tag.type == NFCTagType.mifare_classic ||
       tag.type == NFCTagType.mifare_ultralight ||
@@ -33,6 +38,16 @@ Future<ScannedCard?> handleNfcTag(NFCTag tag) async {
   }
 
   return null;
+}
+
+ScannedCard? _handleIso15693(NFCTag tag) {
+  final uid = _toUint8List(tag.id);
+  if (uid.isEmpty) {
+    return null;
+  }
+
+  final card = Iso15693(uid);
+  return ScannedCard(card: card, source: 'NFC');
 }
 
 Future<Uint8List> _felicaReadWithoutEncryption(

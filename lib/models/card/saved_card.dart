@@ -2,6 +2,7 @@ import 'card.dart';
 import 'aic.dart';
 import 'aime.dart';
 import 'felica.dart';
+import 'iso15693.dart';
 import 'scanned_card.dart';
 
 /// Persisted card model wrapping an [ICCard]. Replaces the old `BagCard`.
@@ -25,6 +26,7 @@ class SavedCard {
     if (card is Aic) return (card as Aic).accessCodeString;
     if (card is Aime) return (card as Aime).accessCodeString;
     if (card is Felica) return (card as Felica).idString;
+    if (card is Iso15693) return (card as Iso15693).idString;
     return card.name;
   }
 

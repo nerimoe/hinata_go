@@ -4,6 +4,7 @@ import 'aic.dart';
 import 'aime.dart';
 import 'banapass.dart';
 import 'felica.dart';
+import 'iso15693.dart';
 import 'iso14443a.dart';
 
 class ICCard {
@@ -35,6 +36,8 @@ class ICCard {
         return Banapass.fromJson(json);
       case 'iso14443':
         return Iso14443.fromJson(json);
+      case 'iso15693':
+        return Iso15693.fromJson(json);
       default:
         return ICCard(hexToBytes(json['id'] as String? ?? ''));
     }
@@ -44,7 +47,7 @@ class ICCard {
   static ICCard fromTypeAndValue(String type, String value) {
     return fromJson({
       'type': type,
-      'id': '',
+      'id': type == 'iso15693' ? value : '',
       'accessCode': value,
       'block1': value,
     });
