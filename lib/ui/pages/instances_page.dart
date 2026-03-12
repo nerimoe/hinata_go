@@ -142,6 +142,15 @@ class _InstanceDialog extends HookConsumerWidget {
     final selectedTypeState = useState(
       existingInstance?.type ?? InstanceType.hinataIo,
     );
+    final isSpiceApiType =
+        selectedTypeState.value == InstanceType.spiceApiUnit0 ||
+        selectedTypeState.value == InstanceType.spiceApiUnit1;
+    final urlLabel = isSpiceApiType
+        ? context.l10n.spiceApiEndpointLabel
+        : context.l10n.hinataUrlLabel;
+    final invalidUrlMessage = isSpiceApiType
+        ? context.l10n.invalidSpiceApiEndpoint
+        : context.l10n.invalidHinataUrl;
 
     void onSave() {
       final name = nameController.text.trim();
@@ -156,7 +165,7 @@ class _InstanceDialog extends HookConsumerWidget {
       if (!isValidUrl) {
         ScaffoldMessenger.of(
           context,
-        ).showQuickSnackBar(SnackBar(content: Text(context.l10n.invalidUrl)));
+        ).showQuickSnackBar(SnackBar(content: Text(invalidUrlMessage)));
         return;
       }
 
@@ -198,7 +207,7 @@ class _InstanceDialog extends HookConsumerWidget {
             const SizedBox(height: 10),
             TextField(
               controller: urlController,
-              decoration: InputDecoration(labelText: context.l10n.webhookUrl),
+              decoration: InputDecoration(labelText: urlLabel),
               keyboardType: TextInputType.url,
             ),
             const SizedBox(height: 10),

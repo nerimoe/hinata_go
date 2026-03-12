@@ -15,6 +15,10 @@ class Validators {
       return isValidUrl(url);
     }
 
+    return isValidSpiceApiUrl(url);
+  }
+
+  static bool isValidSpiceApiUrl(String url) {
     try {
       SpiceApiEndpoint.parse(url);
       return true;

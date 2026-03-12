@@ -198,6 +198,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invalidUrl => '请输入有效的 URL（http/https）';
 
   @override
+  String get invalidHinataUrl => '请输入有效的 HTTP/HTTPS 地址';
+
+  @override
+  String get invalidSpiceApiEndpoint =>
+      '请输入有效的 SpiceAPI TCP 地址（例如 127.0.0.1:1337）';
+
+  @override
   String get editInstance => '编辑实例';
 
   @override
@@ -205,6 +212,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get webhookUrl => 'Webhook URL (http://...)';
+
+  @override
+  String get hinataUrlLabel => '服务器地址（http://... 或 https://...）';
+
+  @override
+  String get spiceApiEndpointLabel =>
+      'SpiceAPI 地址（host:port 或 tcp://host:port）';
 
   @override
   String get instanceType => '实例类型';

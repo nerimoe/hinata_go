@@ -89,9 +89,13 @@
     }
   },
   "invalidUrl": "Please enter a valid URL (http/https)",
+  "invalidHinataUrl": "Please enter a valid HTTP/HTTPS URL",
+  "invalidSpiceApiEndpoint": "Please enter a valid SpiceAPI TCP endpoint (e.g. 127.0.0.1:1337)",
   "editInstance": "Edit Instance",
   "nameExample": "Name (e.g. maimaiDX)",
   "webhookUrl": "Webhook URL (http://...)",
+  "hinataUrlLabel": "Server URL (http://... or https://...)",
+  "spiceApiEndpointLabel": "SpiceAPI Endpoint (host:port or tcp://host:port)",
   "instanceType": "Instance Type",
   "instanceTypeHinataIo": "HINATA IO",
   "instanceTypeSpiceApiUnit0": "SpiceAPI (Unit 0)",
