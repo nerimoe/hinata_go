@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 import 'package:hinata_go/models/card/card.dart';
 import 'package:hinata_go/models/card/felica.dart';
-import 'package:http/http.dart' as http;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/remote_instance.dart';
+import 'spiceapi/spiceapi.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
@@ -25,59 +25,132 @@ class ApiService {
     required ICCard card,
   }) async {
     try {
-      Map<String, dynamic> payload;
-
-      if (card.value == null || card.value!.isEmpty) {
-         log('Card value is empty.');
-         return ApiServiceResult(success: false, errorMessage: 'Card value is empty');
+      final validationError = _validateCard(card);
+      if (validationError != null) {
+        return validationError;
       }
 
-      if (instance.type == InstanceType.spiceApiUnit0 ||
-          instance.type == InstanceType.spiceApiUnit1) {
-        if (card is! Felica) {
-          log('Card is not Felica, skipping SpiceAPI request.');
-          return ApiServiceResult(success: false, errorMessage: 'SpiceAPI only supports Felica cards');
-        }
-        int unit = instance.type == InstanceType.spiceApiUnit0 ? 0 : 1;
-        payload = {
-          'id': 1,
-          'module': 'card',
-          'function': 'insert',
-          'params': [
-            unit,
-            card.idString,
-          ]
-        };
-      } else {
-        payload = {'type': card.type, 'value': card.value};
-      }
+      return _isSpiceApiInstance(instance)
+          ? _sendSpiceApiCardData(instance: instance, card: card)
+          : _sendHttpCardData(instance: instance, card: card);
+    } on TimeoutException catch (_) {
+      return _handleTimeout(instance);
+    } on SocketException catch (e) {
+      return _handleSocketError(instance, e);
+    } catch (e, stackTrace) {
+      return _handleUnknownError(e, stackTrace);
+    }
+  }
 
-      log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
+  bool _isSpiceApiInstance(RemoteInstance instance) {
+    return instance.type == InstanceType.spiceApiUnit0 ||
+        instance.type == InstanceType.spiceApiUnit1;
+  }
 
-      final uri = Uri.parse(instance.url);
-      final response = await http
-          .post(
-            uri,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(payload),
-          )
+  ApiServiceResult? _validateCard(ICCard card) {
+    if (card.value != null && card.value!.isNotEmpty) {
+      return null;
+    }
+
+    log('Card value is empty.');
+    return ApiServiceResult(
+      success: false,
+      errorMessage: 'Card value is empty',
+    );
+  }
+
+  Future<ApiServiceResult> _sendHttpCardData({
+    required RemoteInstance instance,
+    required ICCard card,
+  }) async {
+    final payload = {'type': card.type, 'value': card.value};
+    log('Sending payload to ${instance.url}: ${jsonEncode(payload)}');
+
+    final uri = Uri.parse(instance.url);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 10);
+
+    try {
+      final request = await client
+          .postUrl(uri)
           .timeout(const Duration(seconds: 10));
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode(payload));
+
+      final response = await request.close().timeout(
+        const Duration(seconds: 10),
+      );
+      await response.drain<void>();
 
       log('Response status: ${response.statusCode}');
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return ApiServiceResult(success: true);
-      } else {
-        return ApiServiceResult(success: false, errorMessage: 'Server returned ${response.statusCode}');
       }
-    } on TimeoutException catch (_) {
-      log('Request to ${instance.url} timed out.');
-      return ApiServiceResult(success: false, errorMessage: 'Request timed out');
-    } on SocketException catch (e) {
-      log('Network error connecting to ${instance.url}: $e');
-      return ApiServiceResult(success: false, errorMessage: 'Network error: ${e.message}');
-    } catch (e, stackTrace) {
-      log('Unknown error in sendCardData: $e\n$stackTrace');
-      return ApiServiceResult(success: false, errorMessage: 'Unknown error occurred');
+
+      return ApiServiceResult(
+        success: false,
+        errorMessage: 'Server returned ${response.statusCode}',
+      );
+    } finally {
+      client.close(force: true);
     }
+  }
+
+  Future<ApiServiceResult> _sendSpiceApiCardData({
+    required RemoteInstance instance,
+    required ICCard card,
+  }) async {
+    if (card is! Felica) {
+      log('Card is not Felica, skipping SpiceAPI request.');
+      return ApiServiceResult(
+        success: false,
+        errorMessage: 'SpiceAPI only supports Felica cards',
+      );
+    }
+
+    final unit = instance.type == InstanceType.spiceApiUnit0 ? 0 : 1;
+    final endpoint = SpiceApiEndpoint.parse(instance.url);
+    log(
+      'Sending SpiceAPI card insert to ${endpoint.host}:${endpoint.port} '
+      'for unit $unit: ${card.idString}',
+    );
+
+    final connection = Connection(endpoint.host, endpoint.port, endpoint.pass);
+
+    try {
+      await connection.onConnect().timeout(const Duration(seconds: 10));
+      await cardInsert(
+        connection,
+        unit,
+        card.idString,
+      ).timeout(const Duration(seconds: 10));
+      return ApiServiceResult(success: true);
+    } finally {
+      connection.dispose();
+    }
+  }
+
+  ApiServiceResult _handleTimeout(RemoteInstance instance) {
+    log('Request to ${instance.url} timed out.');
+    return ApiServiceResult(success: false, errorMessage: 'Request timed out');
+  }
+
+  ApiServiceResult _handleSocketError(
+    RemoteInstance instance,
+    SocketException error,
+  ) {
+    log('Network error connecting to ${instance.url}: $error');
+    return ApiServiceResult(
+      success: false,
+      errorMessage: 'Network error: ${error.message}',
+    );
+  }
+
+  ApiServiceResult _handleUnknownError(Object error, StackTrace stackTrace) {
+    log('Unknown error in sendCardData: $error\n$stackTrace');
+    return ApiServiceResult(
+      success: false,
+      errorMessage: 'Unknown error occurred',
+    );
   }
 }

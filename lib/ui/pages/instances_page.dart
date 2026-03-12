@@ -139,7 +139,9 @@ class _InstanceDialog extends HookConsumerWidget {
     );
     final urlController = useTextEditingController(text: existingInstance?.url);
     final selectedIconState = useState(existingInstance?.icon ?? '🐻');
-    final selectedTypeState = useState(existingInstance?.type ?? InstanceType.hinataIo);
+    final selectedTypeState = useState(
+      existingInstance?.type ?? InstanceType.hinataIo,
+    );
 
     void onSave() {
       final name = nameController.text.trim();
@@ -147,7 +149,10 @@ class _InstanceDialog extends HookConsumerWidget {
 
       if (name.isEmpty || url.isEmpty) return;
 
-      final isValidUrl = Validators.isValidUrl(url);
+      final isValidUrl = Validators.isValidInstanceUrl(
+        url,
+        selectedTypeState.value,
+      );
       if (!isValidUrl) {
         ScaffoldMessenger.of(
           context,
