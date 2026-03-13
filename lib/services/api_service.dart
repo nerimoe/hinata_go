@@ -8,6 +8,7 @@ import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../models/remote_instance.dart';
 import 'spiceapi/spiceapi.dart';
+import 'spiceapi-websocket/spiceapi.dart' as ws_spiceapi;
 
 final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
@@ -46,8 +47,8 @@ class ApiService {
   }
 
   bool _isSpiceApiInstance(RemoteInstance instance) {
-    return instance.type == InstanceType.spiceApiUnit0 ||
-        instance.type == InstanceType.spiceApiUnit1;
+    return instance.type == InstanceType.spiceApi ||
+        instance.type == InstanceType.spiceApiWebSocket;
   }
 
   ApiServiceResult? _validateCard(ICCard card) {
@@ -119,30 +120,53 @@ class ApiService {
       );
     }
 
-    final unit = instance.type == InstanceType.spiceApiUnit0 ? 0 : 1;
+    final unit = instance.unit;
     final endpoint = SpiceApiEndpoint.parse(instance.url);
+    final pass = instance.password.isNotEmpty ? instance.password : endpoint.pass;
+    
     log(
       'Sending SpiceAPI card insert to ${endpoint.host}:${endpoint.port} '
-      'for unit $unit: ${card.idString}',
+      'for unit $unit: ${card.idString} via ${instance.type.name}',
     );
 
-    final connection = Connection(
-      endpoint.host,
-      endpoint.port,
-      endpoint.pass,
-      refreshSession: false,
-    );
+    if (instance.type == InstanceType.spiceApiWebSocket) {
+      final connection = ws_spiceapi.Connection(
+        endpoint.host,
+        endpoint.port,
+        pass,
+        refreshSession: false,
+      );
 
-    try {
-      await connection.onConnect().timeout(const Duration(seconds: 10));
-      await cardInsert(
-        connection,
-        unit,
-        cardId,
-      ).timeout(const Duration(seconds: 10));
-      return ApiServiceResult(success: true);
-    } finally {
-      connection.dispose();
+      try {
+        await connection.onConnect().timeout(const Duration(seconds: 10));
+        await ws_spiceapi.cardInsert(
+          connection,
+          unit,
+          cardId,
+        ).timeout(const Duration(seconds: 10));
+        return ApiServiceResult(success: true);
+      } finally {
+        connection.dispose();
+      }
+    } else {
+      final connection = Connection(
+        endpoint.host,
+        endpoint.port,
+        pass,
+        refreshSession: false,
+      );
+
+      try {
+        await connection.onConnect().timeout(const Duration(seconds: 10));
+        await cardInsert(
+          connection,
+          unit,
+          cardId,
+        ).timeout(const Duration(seconds: 10));
+        return ApiServiceResult(success: true);
+      } finally {
+        connection.dispose();
+      }
     }
   }
 

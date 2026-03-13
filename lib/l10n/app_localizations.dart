@@ -506,17 +506,29 @@ abstract class AppLocalizations {
   /// **'HINATA IO'**
   String get instanceTypeHinataIo;
 
-  /// No description provided for @instanceTypeSpiceApiUnit0.
+  /// No description provided for @instanceTypeSpiceApi.
   ///
   /// In en, this message translates to:
-  /// **'SpiceAPI (Unit 0)'**
-  String get instanceTypeSpiceApiUnit0;
+  /// **'SpiceAPI (TcpSocket)'**
+  String get instanceTypeSpiceApi;
 
-  /// No description provided for @instanceTypeSpiceApiUnit1.
+  /// No description provided for @instanceTypeSpiceApiWebSocket.
   ///
   /// In en, this message translates to:
-  /// **'SpiceAPI (Unit 1)'**
-  String get instanceTypeSpiceApiUnit1;
+  /// **'SpiceAPI (WebSocket)'**
+  String get instanceTypeSpiceApiWebSocket;
+
+  /// No description provided for @spiceApiUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'SpiceAPI Unit'**
+  String get spiceApiUnit;
+
+  /// No description provided for @spiceApiPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password (Optional)'**
+  String get spiceApiPassword;
 
   /// No description provided for @selectIcon.
   ///

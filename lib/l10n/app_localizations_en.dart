@@ -231,10 +231,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get instanceTypeHinataIo => 'HINATA IO';
 
   @override
-  String get instanceTypeSpiceApiUnit0 => 'SpiceAPI (Unit 0)';
+  String get instanceTypeSpiceApi => 'SpiceAPI (TcpSocket)';
 
   @override
-  String get instanceTypeSpiceApiUnit1 => 'SpiceAPI (Unit 1)';
+  String get instanceTypeSpiceApiWebSocket => 'SpiceAPI (WebSocket)';
+
+  @override
+  String get spiceApiUnit => 'SpiceAPI Unit';
+
+  @override
+  String get spiceApiPassword => 'Password (Optional)';
 
   @override
   String get selectIcon => 'Select Icon:';

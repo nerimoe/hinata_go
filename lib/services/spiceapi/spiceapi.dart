@@ -46,7 +46,9 @@ class SpiceApiEndpoint {
 
     if (uri.scheme.isNotEmpty &&
         uri.scheme != 'tcp' &&
-        uri.scheme != 'spiceapi') {
+        uri.scheme != 'spiceapi' &&
+        uri.scheme != 'ws' &&
+        uri.scheme != 'wss') {
       throw FormatException('Unsupported SpiceAPI scheme: ${uri.scheme}');
     }
 

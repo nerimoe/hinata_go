@@ -98,8 +98,10 @@
   "spiceApiEndpointLabel": "SpiceAPI Endpoint (host:port or tcp://host:port)",
   "instanceType": "Instance Type",
   "instanceTypeHinataIo": "HINATA IO",
-  "instanceTypeSpiceApiUnit0": "SpiceAPI (Unit 0)",
-  "instanceTypeSpiceApiUnit1": "SpiceAPI (Unit 1)",
+  "instanceTypeSpiceApi": "SpiceAPI (TcpSocket)",
+    "instanceTypeSpiceApiWebSocket": "SpiceAPI (WebSocket)",
+    "spiceApiUnit": "SpiceAPI Unit",
+    "spiceApiPassword": "Password (Optional)",
   "selectIcon": "Select Icon:",
   "confirmSendToActiveInstance": "Send this {cardName} card to the active instance?",
   "@confirmSendToActiveInstance": {

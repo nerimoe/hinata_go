@@ -138,13 +138,17 @@ class _InstanceDialog extends HookConsumerWidget {
       text: existingInstance?.name,
     );
     final urlController = useTextEditingController(text: existingInstance?.url);
+    final passwordController = useTextEditingController(text: existingInstance?.password);
+    
     final selectedIconState = useState(existingInstance?.icon ?? '🐻');
     final selectedTypeState = useState(
       existingInstance?.type ?? InstanceType.hinataIo,
     );
+    final selectedUnitState = useState(existingInstance?.unit ?? 0);
+    
     final isSpiceApiType =
-        selectedTypeState.value == InstanceType.spiceApiUnit0 ||
-        selectedTypeState.value == InstanceType.spiceApiUnit1;
+        selectedTypeState.value == InstanceType.spiceApi ||
+        selectedTypeState.value == InstanceType.spiceApiWebSocket;
     final urlLabel = isSpiceApiType
         ? context.l10n.spiceApiEndpointLabel
         : context.l10n.hinataUrlLabel;
@@ -155,6 +159,7 @@ class _InstanceDialog extends HookConsumerWidget {
     void onSave() {
       final name = nameController.text.trim();
       final url = urlController.text.trim();
+      final password = passwordController.text.trim();
 
       if (name.isEmpty || url.isEmpty) return;
 
@@ -175,6 +180,8 @@ class _InstanceDialog extends HookConsumerWidget {
         url: url,
         icon: selectedIconState.value.isEmpty ? '🐻' : selectedIconState.value,
         type: selectedTypeState.value,
+        unit: selectedUnitState.value,
+        password: password,
       );
 
       if (existingInstance != null) {
@@ -205,12 +212,6 @@ class _InstanceDialog extends HookConsumerWidget {
               decoration: InputDecoration(labelText: context.l10n.nameExample),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: urlController,
-              decoration: InputDecoration(labelText: urlLabel),
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 10),
             DropdownButtonFormField<InstanceType>(
               initialValue: selectedTypeState.value,
               decoration: InputDecoration(labelText: context.l10n.instanceType),
@@ -220,12 +221,12 @@ class _InstanceDialog extends HookConsumerWidget {
                   child: Text(context.l10n.instanceTypeHinataIo),
                 ),
                 DropdownMenuItem(
-                  value: InstanceType.spiceApiUnit0,
-                  child: Text(context.l10n.instanceTypeSpiceApiUnit0),
+                  value: InstanceType.spiceApi,
+                  child: Text(context.l10n.instanceTypeSpiceApi),
                 ),
                 DropdownMenuItem(
-                  value: InstanceType.spiceApiUnit1,
-                  child: Text(context.l10n.instanceTypeSpiceApiUnit1),
+                  value: InstanceType.spiceApiWebSocket,
+                  child: Text(context.l10n.instanceTypeSpiceApiWebSocket),
                 ),
               ],
               onChanged: (value) {
@@ -234,6 +235,40 @@ class _InstanceDialog extends HookConsumerWidget {
                 }
               },
             ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: urlController,
+              decoration: InputDecoration(labelText: urlLabel),
+              keyboardType: TextInputType.url,
+            ),
+            if (isSpiceApiType) ...[
+              const SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                decoration: InputDecoration(labelText: context.l10n.spiceApiPassword),
+                obscureText: true,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<int>(
+                initialValue: selectedUnitState.value,
+                decoration: InputDecoration(labelText: context.l10n.spiceApiUnit),
+                items: const [
+                  DropdownMenuItem(
+                    value: 0,
+                    child: Text('0'),
+                  ),
+                  DropdownMenuItem(
+                    value: 1,
+                    child: Text('1'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    selectedUnitState.value = value;
+                  }
+                },
+              ),
+            ],
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerLeft,
