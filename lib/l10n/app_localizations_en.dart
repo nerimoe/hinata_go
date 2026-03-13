@@ -209,6 +209,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please enter a valid SpiceAPI TCP endpoint (e.g. 127.0.0.1:1337)';
 
   @override
+  String get invalidSpiceApiWebSocketEndpoint =>
+      'Please enter a valid SpiceAPI WebSocket endpoint (e.g. ws://127.0.0.1:1337)';
+
+  @override
   String get editInstance => 'Edit Instance';
 
   @override
@@ -223,6 +227,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get spiceApiEndpointLabel =>
       'SpiceAPI Endpoint (host:port or tcp://host:port)';
+
+  @override
+  String get spiceApiWebSocketEndpointLabel =>
+      'SpiceAPI Endpoint (ws://host:port or wss://host:port)';
 
   @override
   String get instanceType => 'Instance Type';

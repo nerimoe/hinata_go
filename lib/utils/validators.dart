@@ -14,13 +14,29 @@ class Validators {
     if (type == InstanceType.hinataIo) {
       return isValidUrl(url);
     }
+    
+    if (type == InstanceType.spiceApi) {
+      return isValidSpiceApiUrl(url, allowWs: false);
+    }
 
-    return isValidSpiceApiUrl(url);
+    if (type == InstanceType.spiceApiWebSocket) {
+      return isValidSpiceApiUrl(url, allowWs: true);
+    }
+    
+    return false;
   }
 
-  static bool isValidSpiceApiUrl(String url) {
+  static bool isValidSpiceApiUrl(String url, {required bool allowWs}) {
     try {
       SpiceApiEndpoint.parse(url);
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+          if (allowWs) {
+              return uri.isScheme('ws') || uri.isScheme('wss') || uri.isScheme('http') || uri.isScheme('https');
+          } else {
+              return uri.isScheme('tcp') || uri.isScheme('http') || uri.isScheme('https') || !url.contains('://');
+          }
+      }
       return true;
     } on FormatException {
       return false;

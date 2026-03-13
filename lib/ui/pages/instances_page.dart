@@ -149,12 +149,16 @@ class _InstanceDialog extends HookConsumerWidget {
     final isSpiceApiType =
         selectedTypeState.value == InstanceType.spiceApi ||
         selectedTypeState.value == InstanceType.spiceApiWebSocket;
-    final urlLabel = isSpiceApiType
+    final urlLabel = selectedTypeState.value == InstanceType.spiceApi
         ? context.l10n.spiceApiEndpointLabel
-        : context.l10n.hinataUrlLabel;
-    final invalidUrlMessage = isSpiceApiType
+        : selectedTypeState.value == InstanceType.spiceApiWebSocket
+            ? context.l10n.spiceApiWebSocketEndpointLabel
+            : context.l10n.hinataUrlLabel;
+    final invalidUrlMessage = selectedTypeState.value == InstanceType.spiceApi
         ? context.l10n.invalidSpiceApiEndpoint
-        : context.l10n.invalidHinataUrl;
+        : selectedTypeState.value == InstanceType.spiceApiWebSocket
+            ? context.l10n.invalidSpiceApiWebSocketEndpoint
+            : context.l10n.invalidHinataUrl;
 
     void onSave() {
       final name = nameController.text.trim();

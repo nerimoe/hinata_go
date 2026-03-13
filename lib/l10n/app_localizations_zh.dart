@@ -204,6 +204,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invalidSpiceApiEndpoint => '请输入有效的 SpiceAPI TCP 地址';
 
   @override
+  String get invalidSpiceApiWebSocketEndpoint => '请输入有效的 SpiceAPI WebSocket 地址';
+
+  @override
   String get editInstance => '编辑实例';
 
   @override
@@ -218,6 +221,10 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get spiceApiEndpointLabel =>
       'SpiceAPI 地址（host:port 或 tcp://host:port）';
+
+  @override
+  String get spiceApiWebSocketEndpointLabel =>
+      'SpiceAPI 地址（ws://host:port 或 wss://host:port）';
 
   @override
   String get instanceType => '实例类型';

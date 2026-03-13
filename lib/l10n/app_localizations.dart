@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'Please enter a valid SpiceAPI TCP endpoint (e.g. 127.0.0.1:1337)'**
   String get invalidSpiceApiEndpoint;
 
+  /// No description provided for @invalidSpiceApiWebSocketEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid SpiceAPI WebSocket endpoint (e.g. ws://127.0.0.1:1337)'**
+  String get invalidSpiceApiWebSocketEndpoint;
+
   /// No description provided for @editInstance.
   ///
   /// In en, this message translates to:
@@ -493,6 +499,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SpiceAPI Endpoint (host:port or tcp://host:port)'**
   String get spiceApiEndpointLabel;
+
+  /// No description provided for @spiceApiWebSocketEndpointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SpiceAPI Endpoint (ws://host:port or wss://host:port)'**
+  String get spiceApiWebSocketEndpointLabel;
 
   /// No description provided for @instanceType.
   ///
