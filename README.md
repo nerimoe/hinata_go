@@ -7,7 +7,7 @@
 
 
 ## Usage (segatools)
-**以下配置均已 HINATA 公共刷卡服务器 ( aime-ws.neri.moe ) 为例，请确保你的网络环境可以正常访问 Cloudflare 的服务**
+**以下配置均以 HINATA 公共刷卡服务器 ( aime-ws.neri.moe ) 为例，请确保你的网络环境可以正常访问 Cloudflare 的服务**
 1. 首先在你的游戏部署 [HINATA AimeIO](https://hinata.neri.moe/game-setting/sega/hinata-client/) ，然后配置远程刷卡服务器，使用文本直接编辑或使用 HINATA Client 图形化编辑均可：
     ```ini
     [aime]
