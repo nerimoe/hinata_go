@@ -67,9 +67,7 @@ class ScannedCardDetailV2 extends ConsumerWidget {
               showCloseButtonSpace: showCloseButtonSpace,
             ),
           if (!isUsable)
-            _UnusableCardWarning(
-              message: l10n.unusableMifareCardWarning,
-            ),
+            _UnusableCardWarning(message: l10n.unusableMifareCardWarning),
           _TechnicalFieldsSection(children: _buildTechnicalFields()),
         ],
       ),
@@ -179,10 +177,7 @@ List<_CardDetailField> _buildCardDetailFields(ICCard card) {
     final localizedType = card.localizedCardType;
     if (localizedType != null) {
       fields.add(
-        _CardDetailField(
-          label: l10n.transitCardType,
-          value: localizedType,
-        ),
+        _CardDetailField(label: l10n.transitCardType, value: localizedType),
       );
     }
     if (card.expiryDate != null && card.expiryDate!.isNotEmpty) {
@@ -195,10 +190,7 @@ List<_CardDetailField> _buildCardDetailFields(ICCard card) {
     }
     if (card.issueDate != null && card.issueDate!.isNotEmpty) {
       fields.add(
-        _CardDetailField(
-          label: l10n.transitIssueDate,
-          value: card.issueDate!,
-        ),
+        _CardDetailField(label: l10n.transitIssueDate, value: card.issueDate!),
       );
     }
   }
@@ -283,6 +275,11 @@ const List<_CardFieldDefinition<Banapass>> _banapassFieldDefinitions = [
 
 const List<_CardFieldDefinition<Felica>> _felicaPrimaryFieldDefinitions = [
   _CardFieldDefinition(label: 'IDm', extractor: _felicaIdm, groupInFours: true),
+  _CardFieldDefinition(
+    label: 'Fake Access Code',
+    extractor: _felicaFakeAccessCode,
+    groupInFours: true,
+  ),
 ];
 
 const List<_CardFieldDefinition<HasEPass>> _epassFieldDefinitions = [
@@ -323,6 +320,7 @@ String? _aicManufacturer(Aic card) => card.manufacturer;
 String? _banapassFallbackBlock1(Banapass card) =>
     card.accessCodeString == null ? card.block1Hex : null;
 String? _felicaIdm(Felica card) => _upperHex(card.idString);
+String? _felicaFakeAccessCode(Felica card) => card.fakeAccessCodeString;
 String? _epassValue(HasEPass card) => card.epass;
 String? _felicaPmm(Felica card) => _upperHex(card.pmmString);
 String? _felicaSystemCode(Felica card) => card.systemCodeDisplay;

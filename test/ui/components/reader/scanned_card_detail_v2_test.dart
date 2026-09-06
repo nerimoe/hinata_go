@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hinata_go/l10n/app_localizations.dart';
 import 'package:hinata_go/models/card/card.dart';
+import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso14443a.dart';
 import 'package:hinata_go/models/card/tunion.dart';
 import 'package:hinata_go/ui/components/reader/scanned_card_detail_v2.dart';
@@ -49,11 +50,7 @@ void main() {
                 Uint8List.fromList(const [1, 2, 3, 4]),
                 0x08,
                 0x0004,
-                tags: [
-                  CardTag.issuer('大连明珠卡'),
-                  CardTag.tUnion,
-                  CardTag.isoDep,
-                ],
+                tags: [CardTag.issuer('大连明珠卡'), CardTag.tUnion, CardTag.isoDep],
               ),
               title: '我的大连卡',
             ),
@@ -68,7 +65,9 @@ void main() {
     expect(find.text('ISO-DEP'), findsOneWidget);
   });
 
-  testWidgets('renders localized card tags and T-Union fields (en)', (tester) async {
+  testWidgets('renders localized card tags and T-Union fields (en)', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
@@ -87,11 +86,7 @@ void main() {
                 cardType: '01',
                 expiryDate: '2030-12-31',
                 issueDate: '2020-01-01',
-                tags: [
-                  CardTag.issuer('大连明珠卡'),
-                  CardTag.tUnion,
-                  CardTag.isoDep,
-                ],
+                tags: [CardTag.issuer('大连明珠卡'), CardTag.tUnion, CardTag.isoDep],
               ),
               title: 'My Dalian Card',
             ),
@@ -114,5 +109,55 @@ void main() {
     expect(find.text('2030-12-31'), findsOneWidget);
     expect(find.text('Issue Date'), findsOneWidget);
     expect(find.text('2020-01-01'), findsOneWidget);
+  });
+
+  testWidgets('renders IDm and Fake Access Code for Felica cards', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ScannedCardDetailV2(
+              card: Felica(
+                Uint8List.fromList([
+                  0x01,
+                  0x2e,
+                  0x4a,
+                  0x90,
+                  0x12,
+                  0x34,
+                  0x56,
+                  0x78,
+                ]),
+                Uint8List.fromList([
+                  0x11,
+                  0x22,
+                  0x33,
+                  0x44,
+                  0x55,
+                  0x66,
+                  0x77,
+                  0x88,
+                ]),
+                Uint16List.fromList([0x88b4]),
+              ),
+              title: 'My Felica Card',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('My Felica Card'), findsOneWidget);
+    expect(find.text('IDm'), findsOneWidget);
+    expect(find.text('012E 4A90 1234 5678'), findsOneWidget);
+    expect(find.text('Fake Access Code'), findsOneWidget);
+    expect(find.text('0008 5087 4256 0778 4056'), findsOneWidget);
+    expect(find.text('PMm'), findsOneWidget);
+    expect(find.text('System Code'), findsOneWidget);
   });
 }
