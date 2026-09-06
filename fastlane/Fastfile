@@ -64,6 +64,7 @@ platform :ios do
         automatic_release: true,
         skip_screenshots: true,
         skip_metadata: true,
+        precheck_include_in_app_purchases: false,
         force: true
       )
     else
