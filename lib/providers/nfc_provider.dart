@@ -479,7 +479,6 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
     final newLog = ScanLog(
       id: scanLogId,
       source: scannedCard.source,
-      showValue: scannedCard.showValue,
       card: card,
       timestamp: DateTime.now(),
     );
@@ -513,7 +512,6 @@ class NfcNotifier extends Notifier<NfcState> with WidgetsBindingObserver {
         final updatedLog = ScanLog(
           id: existingLog.id,
           source: existingLog.source,
-          showValue: extendedCard.showValue,
           card: card,
           timestamp: existingLog.timestamp,
         );

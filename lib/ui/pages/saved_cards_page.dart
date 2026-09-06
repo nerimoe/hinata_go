@@ -70,9 +70,7 @@ class SavedCardsPage extends HookConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.deleteFolder),
         content: Text(
-          l10n.deleteFolderMessage(
-            folderDisplayName(folder.id, folder.name),
-          ),
+          l10n.deleteFolderMessage(folderDisplayName(folder.id, folder.name)),
         ),
         actions: [
           TextButton(
@@ -111,7 +109,6 @@ class SavedCardsPage extends HookConsumerWidget {
     final newLog = ScanLog(
       id: const Uuid().v4(),
       source: 'Direct',
-      showValue: card.showValue,
       card: card.card,
       timestamp: DateTime.now(),
     );

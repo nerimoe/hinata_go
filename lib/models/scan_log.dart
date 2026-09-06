@@ -3,17 +3,21 @@ import 'card/card.dart';
 class ScanLog {
   final String id;
   final String source; // 'NFC', 'QR', 'Direct'
-  final String showValue;
   final ICCard card;
   final DateTime timestamp;
+  final String? _legacyShowValue;
 
   ScanLog({
     required this.id,
     required this.source,
-    required this.showValue,
     required this.card,
     required this.timestamp,
-  });
+    String? showValue,
+  }) : _legacyShowValue = showValue;
+
+  /// User-facing display value based on card type.
+  String get showValue =>
+      card.showedValue.isNotEmpty ? card.showedValue : (_legacyShowValue ?? '');
 
   // Backward compatibility getters
   String get value => card.gamePayload ?? '';
@@ -24,7 +28,6 @@ class ScanLog {
     return {
       'id': id,
       'source': source,
-      'showValue': showValue,
       'card': card.toJson(),
       'timestamp': timestamp.toIso8601String(),
     };
@@ -48,9 +51,9 @@ class ScanLog {
     return ScanLog(
       id: json['id'] as String,
       source: source,
-      showValue: json['showValue'] as String? ?? card.gamePayload ?? '',
       card: card,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      showValue: json['showValue'] as String?,
     );
   }
 }

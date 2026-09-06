@@ -3,13 +3,10 @@ import 'package:cardcipher/epass.dart';
 import 'card.dart';
 
 class Iso15693 extends ICCard implements HasEPass {
-  final String? _persistedEpass;
-
-  Iso15693(super.id, {String? persistedEpass, super.tags})
-    : _persistedEpass = persistedEpass;
+  Iso15693(super.id, {super.tags});
 
   @override
-  late final String? epass = _persistedEpass ?? _computeEpass();
+  late final String? epass = _computeEpass();
 
   @override
   String get name => 'ISO15693 Card';
@@ -20,19 +17,11 @@ class Iso15693 extends ICCard implements HasEPass {
   @override
   String? get gamePayload => idString;
 
-  @override
-  Map<String, dynamic> toJson() {
-    return {...super.toJson(), if (epass != null) 'epass': epass};
-  }
-
   factory Iso15693.fromJson(Map<String, dynamic> json) {
     return Iso15693(
       ICCard.hexToBytes(json['id'] as String? ?? ''),
-      persistedEpass: json['epass'] as String?,
       tags:
-          (json['tags'] as List<dynamic>?)
-              ?.map(CardTag.fromJson)
-              .toList() ??
+          (json['tags'] as List<dynamic>?)?.map(CardTag.fromJson).toList() ??
           const [],
     );
   }

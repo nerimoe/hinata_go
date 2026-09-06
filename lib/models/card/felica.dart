@@ -15,15 +15,8 @@ BigInt bytesToBigInt(Uint8List bytes) {
 class Felica extends ICCard implements HasEPass {
   final Uint8List pmm;
   final Uint16List systemCode;
-  final String? _persistedEpass;
 
-  Felica(
-    super.id,
-    this.pmm,
-    this.systemCode, {
-    String? persistedEpass,
-    super.tags,
-  }) : _persistedEpass = persistedEpass;
+  Felica(super.id, this.pmm, this.systemCode, {super.tags});
 
   String get pmmString =>
       pmm.map((e) => e.toRadixString(16).padLeft(2, '0')).join();
@@ -34,7 +27,7 @@ class Felica extends ICCard implements HasEPass {
       bytesToBigInt(id).toString().padLeft(20, '0');
 
   @override
-  late final String? epass = _persistedEpass ?? _computeEpass();
+  late final String? epass = _computeEpass();
 
   @override
   String get name => "Felica";
@@ -58,8 +51,6 @@ class Felica extends ICCard implements HasEPass {
       ...super.toJson(),
       'pmm': pmmString,
       'systemCode': systemCode.toList(),
-      'fakeAccessCode': fakeAccessCodeString,
-      if (epass != null) 'epass': epass,
     };
   }
 
@@ -70,7 +61,6 @@ class Felica extends ICCard implements HasEPass {
       Uint16List.fromList(
         (json['systemCode'] as List<dynamic>?)?.cast<int>() ?? [],
       ),
-      persistedEpass: json['epass'] as String?,
       tags:
           (json['tags'] as List<dynamic>?)?.map(CardTag.fromJson).toList() ??
           const [],
