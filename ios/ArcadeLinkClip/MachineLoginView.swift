@@ -26,13 +26,12 @@ struct MachineLoginView: View {
           failedView
         }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
       .padding(24)
     }
-    .background(Color(.systemGroupedBackground))
-    .task {
-      if model.state == .idle {
-        // The App Clip invocation is delivered through onContinueUserActivity.
-      }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background {
+      Color(.systemGroupedBackground).ignoresSafeArea()
     }
   }
 
