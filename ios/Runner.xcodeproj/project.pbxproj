@@ -7,6 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		10688FCDEB235C5D7D61F84D /* ArcadeLinkClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */; };
+		B1C000000000000000000001 /* ArcadeLinkAPI.swift in Runner Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000001 /* ArcadeLinkAPI.swift */; };
+		B1C000000000000000000002 /* LocationService.swift in Runner Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000002 /* LocationService.swift */; };
+		B1C000000000000000000003 /* Models.swift in Runner Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000003 /* Models.swift */; };
+		B1C000000000000000000004 /* MunetAuthenticationService.swift in Runner Sources */ = {isa = PBXBuildFile; fileRef = D1C000000000000000000004 /* MunetAuthenticationService.swift */; };
+		B1C000000000000000000005 /* ArcadeLinkNativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */; };
+		B1C000000000000000000006 /* MunetAuthenticationService.swift in ArcadeLinkClip Sources */ = {isa = PBXBuildFile; fileRef = 2A1C00000000000000000002 /* MunetAuthenticationService.swift */; };
+		E2C01C24144A55EDAC6C5ADC /* ArcadeLinkURLBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */; };
+		8DDEA6470F304D2E85B819AD /* ArcadeLinkClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */; };
+		7B07656CE2BE43CFBB961A0B /* ArcadeLinkAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */; };
+		4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5A12DC74545CC94497385 /* InvocationParser.swift */; };
+		E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF425FBD0BA44528796FEA8 /* LocationService.swift */; };
+		40A355512C794E78A542B262 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E4FBE53FF24A51BEABF086 /* Models.swift */; };
+		85CE8E4C908F471AA82371C9 /* MachineLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6B19610946F463EA0AA012F /* MachineLoginView.swift */; };
+		74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */; };
+		B043ADAE26D84ED38AA21563 /* PasskeyAuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
@@ -19,6 +35,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		267667C52F32B900379558AA /* ArcadeLinkClip Proxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 536456333E034E609C9EF501;
+			remoteInfo = ArcadeLinkClip;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -29,6 +52,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		B138DD4FBA74A1E29D330542 /* Embed App Clips */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
+			dstSubfolderSpec = 16;
+			files = (
+				10688FCDEB235C5D7D61F84D /* ArcadeLinkClip.app in Embed App Clips */,
+			);
+			name = "Embed App Clips";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -42,6 +76,24 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkURLBridge.swift; sourceTree = "<group>"; };
+		2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkNativeBridge.swift; sourceTree = "<group>"; };
+		2A1C00000000000000000002 /* MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MunetAuthenticationService.swift; sourceTree = "<group>"; };
+		95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkClipApp.swift; sourceTree = "<group>"; };
+		9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArcadeLinkAPI.swift; sourceTree = "<group>"; };
+		1CE5A12DC74545CC94497385 /* InvocationParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvocationParser.swift; sourceTree = "<group>"; };
+		5FF425FBD0BA44528796FEA8 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
+		68E4FBE53FF24A51BEABF086 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A6B19610946F463EA0AA012F /* MachineLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLoginView.swift; sourceTree = "<group>"; };
+		5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineLoginViewModel.swift; sourceTree = "<group>"; };
+		9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasskeyAuthenticationService.swift; sourceTree = "<group>"; };
+		D1C000000000000000000001 /* ArcadeLinkAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/ArcadeLinkAPI.swift; sourceTree = "<group>"; };
+		D1C000000000000000000002 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/LocationService.swift; sourceTree = "<group>"; };
+		D1C000000000000000000003 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/Models.swift; sourceTree = "<group>"; };
+		D1C000000000000000000004 /* MunetAuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ArcadeLinkClip/MunetAuthenticationService.swift; sourceTree = "<group>"; };
+		528A9C250BB7499AA1C86919 /* ArcadeLinkClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArcadeLinkClip.entitlements; sourceTree = "<group>"; };
+		A5A69BF1B7CB460C94E4212E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArcadeLinkClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
@@ -63,6 +115,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2E7B08B9EBEF453882BC5093 /* ArcadeLinkClip Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -81,6 +140,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5E2F2F514F92411DB9A621D6 /* ArcadeLinkClip */ = {
+			isa = PBXGroup;
+			children = (
+				95064489658D45939E5DA68D /* ArcadeLinkClipApp.swift */,
+				9717F4222543435DA2825968 /* ArcadeLinkAPI.swift */,
+				1CE5A12DC74545CC94497385 /* InvocationParser.swift */,
+				5FF425FBD0BA44528796FEA8 /* LocationService.swift */,
+				68E4FBE53FF24A51BEABF086 /* Models.swift */,
+				A6B19610946F463EA0AA012F /* MachineLoginView.swift */,
+				5FF6F6518A13450E81934F3B /* MachineLoginViewModel.swift */,
+				9E150D06D7BE4252AA09A092 /* PasskeyAuthenticationService.swift */,
+				2A1C00000000000000000002 /* MunetAuthenticationService.swift */,
+				528A9C250BB7499AA1C86919 /* ArcadeLinkClip.entitlements */,
+				A5A69BF1B7CB460C94E4212E /* Info.plist */,
+			);
+			path = ArcadeLinkClip;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -113,6 +190,7 @@
 			children = (
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
+				5E2F2F514F92411DB9A621D6 /* ArcadeLinkClip */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				77720948BB04B7975B2E6226 /* Pods */,
@@ -123,6 +201,7 @@
 			isa = PBXGroup;
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
+				FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -140,6 +219,12 @@
 				3B3967171E833CAA004F5970 /* Runner.entitlements */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
+				29AF5A4F2ED44122568D6750 /* ArcadeLinkURLBridge.swift */,
+				2A1C00000000000000000001 /* ArcadeLinkNativeBridge.swift */,
+				D1C000000000000000000001 /* ArcadeLinkAPI.swift */,
+				D1C000000000000000000002 /* LocationService.swift */,
+				D1C000000000000000000003 /* Models.swift */,
+				D1C000000000000000000004 /* MunetAuthenticationService.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -148,6 +233,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		536456333E034E609C9EF501 /* ArcadeLinkClip */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "ArcadeLinkClip" */;
+			buildPhases = (
+				8ECE75F7F54840CE98A6AB36 /* ArcadeLinkClip Sources */,
+				2E7B08B9EBEF453882BC5093 /* ArcadeLinkClip Frameworks */,
+				5334E8547EE245EDB22A1D05 /* ArcadeLinkClip Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ArcadeLinkClip;
+			productName = ArcadeLinkClip;
+			productReference = FA100BF03C7C425DBFABB85A /* ArcadeLinkClip.app */;
+			productType = "com.apple.product-type.application.on-demand-install-capable";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -175,11 +277,13 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				B138DD4FBA74A1E29D330542 /* Embed App Clips */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BC786F95A1F694CF2AB8CD10 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -207,6 +311,9 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
 					};
+					536456333E034E609C9EF501 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 				};
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
@@ -227,11 +334,20 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				536456333E034E609C9EF501 /* ArcadeLinkClip */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5334E8547EE245EDB22A1D05 /* ArcadeLinkClip Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807F294A63A400263BE5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -287,6 +403,22 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8ECE75F7F54840CE98A6AB36 /* ArcadeLinkClip Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8DDEA6470F304D2E85B819AD /* ArcadeLinkClipApp.swift in Sources */,
+				7B07656CE2BE43CFBB961A0B /* ArcadeLinkAPI.swift in Sources */,
+				4EFBD8768DB3455FB7560F91 /* InvocationParser.swift in Sources */,
+				E0C7EC6A900846209454DF9E /* LocationService.swift in Sources */,
+				40A355512C794E78A542B262 /* Models.swift in Sources */,
+				85CE8E4C908F471AA82371C9 /* MachineLoginView.swift in Sources */,
+				74DE941C77D94C35809D93CD /* MachineLoginViewModel.swift in Sources */,
+				B043ADAE26D84ED38AA21563 /* PasskeyAuthenticationService.swift in Sources */,
+				B1C000000000000000000006 /* MunetAuthenticationService.swift in ArcadeLinkClip Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C807D294A63A400263BE5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -302,12 +434,23 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				E2C01C24144A55EDAC6C5ADC /* ArcadeLinkURLBridge.swift in Sources */,
+				B1C000000000000000000005 /* ArcadeLinkNativeBridge.swift in Sources */,
+				B1C000000000000000000001 /* ArcadeLinkAPI.swift in Runner Sources */,
+				B1C000000000000000000002 /* LocationService.swift in Runner Sources */,
+				B1C000000000000000000003 /* Models.swift in Runner Sources */,
+				B1C000000000000000000004 /* MunetAuthenticationService.swift in Runner Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		BC786F95A1F694CF2AB8CD10 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 536456333E034E609C9EF501 /* ArcadeLinkClip */;
+			targetProxy = 267667C52F32B900379558AA /* ArcadeLinkClip Proxy */;
+		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
@@ -335,6 +478,95 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		3EC0B25A1D5A480914150A40 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ArcadeLinkClip/ArcadeLinkClip.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ArcadeLinkClip/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.ArcadeLink;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		72CE3FD5E171AAEF2A078AD3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ArcadeLinkClip/ArcadeLinkClip.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ArcadeLinkClip/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.ArcadeLink;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		78C6639FF558A84EAB82FBFA /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ArcadeLinkClip/ArcadeLinkClip.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = XKKMJBTHX5;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ArcadeLinkClip/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = moe.neri.hinatago.ArcadeLink;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -654,6 +886,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D52738948B23EB37F0D65945 /* Build configuration list for PBXNativeTarget "ArcadeLinkClip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3EC0B25A1D5A480914150A40 /* Debug */,
+				72CE3FD5E171AAEF2A078AD3 /* Release */,
+				78C6639FF558A84EAB82FBFA /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

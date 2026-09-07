@@ -98,20 +98,13 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_CHANNEL: ${{ inputs.channel }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             echo "value=${MANUAL_CHANNEL:-beta}" >> "$GITHUB_OUTPUT"
           else
-            version="$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1 | tr -d ' "\r')"
-            latest_tag="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo '')"
-            clean_latest="$(echo "${latest_tag#v}" | tr -d '\r')"
-            if [[ -n "$clean_latest" && "$version" == "$clean_latest" ]]; then
-              echo "value=beta" >> "$GITHUB_OUTPUT"
-            else
-              echo "value=production" >> "$GITHUB_OUTPUT"
-            fi
+            # Pushes are TestFlight-only; App Store review is an explicit dispatch.
+            echo "value=beta" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Flutter Pub Get

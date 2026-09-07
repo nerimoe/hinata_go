@@ -17,15 +17,25 @@ import '../ui/pages/scan_page.dart';
 import '../ui/pages/settings_page.dart';
 import '../ui/scaffold_with_navbar.dart';
 import '../ui/widgets/animated_branch_container.dart';
+import '../features/arcadelink/arcadelink_machine_login_page.dart';
+import '../services/arcadelink_invocation_service.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'root',
 );
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final invocationService = ref.watch(arcadeLinkInvocationProvider);
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/scan',
+    refreshListenable: invocationService,
+    redirect: (context, state) {
+      final publicId = invocationService.pendingPublicId;
+      if (publicId == null) return null;
+      final target = '/arcadelink/${Uri.encodeComponent(publicId)}';
+      return state.uri.path == target ? null : target;
+    },
     routes: [
       GoRoute(
         path: '/camera',
@@ -109,6 +119,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
         ],
+      ),
+      GoRoute(
+        path: '/arcadelink/:publicId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => ArcadeLinkMachineLoginPage(
+          publicId: state.pathParameters['publicId']!,
+        ),
       ),
     ],
   );
