@@ -1,6 +1,30 @@
 default_platform(:ios)
 
 platform :ios do
+  desc "Refresh App Store profiles using the installed distribution identity"
+  lane :prepare_distribution_profiles do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("IOS_ASC_KEY_ID"),
+      issuer_id: ENV.fetch("IOS_ASC_ISSUER_ID"),
+      key_content: ENV.fetch("IOS_ASC_KEY_P8_BASE64"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    ["moe.neri.hinatago", "moe.neri.hinatago.ArcadeLink"].each do |bundle_id|
+      get_provisioning_profile(
+        api_key: api_key,
+        app_identifier: bundle_id,
+        provisioning_name: "HINATA CI App Store #{bundle_id}",
+        ignore_profiles_with_different_name: true,
+        output_path: ENV.fetch("RUNNER_TEMP"),
+        filename: "#{bundle_id}.mobileprovision",
+        force: true,
+        skip_certificate_verification: false
+      )
+    end
+  end
+
   desc "Calculate the next App Store build number"
   lane :next_build_number do
     api_key = app_store_connect_api_key(

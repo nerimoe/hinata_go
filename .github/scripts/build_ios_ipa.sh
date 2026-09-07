@@ -46,6 +46,8 @@ for plist_key in CFBundleShortVersionString CFBundleVersion; do
   fi
 done
 
+fastlane ios prepare_distribution_profiles
+
 xcodebuild -exportArchive \
   -archivePath build/ios/archive/Runner.xcarchive \
   -exportPath build/ios/ipa \

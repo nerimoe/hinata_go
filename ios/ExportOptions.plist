@@ -7,7 +7,16 @@
     <key>destination</key>
     <string>export</string>
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Apple Distribution</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>moe.neri.hinatago</key>
+        <string>HINATA CI App Store moe.neri.hinatago</string>
+        <key>moe.neri.hinatago.ArcadeLink</key>
+        <string>HINATA CI App Store moe.neri.hinatago.ArcadeLink</string>
+    </dict>
     <key>teamID</key>
     <string>XKKMJBTHX5</string>
     <key>manageAppVersionAndBuildNumber</key>
