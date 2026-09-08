@@ -105,18 +105,20 @@ class MifareCardWritePayload {
     Banapass card,
     CardWriteMode mode,
   ) {
-    if (card.block1.length != 16) {
+    final block1 = card.effectiveBlock1;
+    final block2 = card.effectiveBlock2;
+    if (block1 == null || block1.length != 16) {
       throw const MifareWritePayloadException(
-        'Banapass block 1 must contain exactly 16 bytes',
+        'Banapass block 1 cannot be derived; it must contain exactly 16 bytes',
       );
     }
-    if (card.block2 != null && card.block2!.length != 16) {
+    if (card.dualKey && (block2 == null || block2.length != 16)) {
       throw const MifareWritePayloadException(
-        'Banapass block 2 must contain exactly 16 bytes when present',
+        'Banapass dual-key block 2 cannot be derived; it must contain exactly 16 bytes',
       );
     }
 
-    final dualKey = card.block2 != null;
+    final dualKey = card.dualKey;
     final access = MifareSectorAccess(
       block0: MifareAccessCondition.fromValue(
         mode == CardWriteMode.rewritable ? 0 : 2,
@@ -133,8 +135,8 @@ class MifareCardWritePayload {
             : (dualKey ? 6 : 2),
       ),
     );
-    final blocks = <int, Uint8List>{1: Uint8List.fromList(card.block1)};
-    if (card.block2 case final block2?) {
+    final blocks = <int, Uint8List>{1: Uint8List.fromList(block1)};
+    if (dualKey && block2 != null) {
       blocks[2] = Uint8List.fromList(block2);
     }
 

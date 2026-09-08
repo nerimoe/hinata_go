@@ -3,10 +3,12 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:uuid/uuid.dart';
 import 'package:hinata_go/models/card/card.dart';
+import 'package:hinata_go/models/card/banapass.dart';
 import 'package:hinata_go/models/card/felica.dart';
 import 'package:hinata_go/models/card/iso15693.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
+import '../models/remote_capabilities.dart';
 import '../models/remote_instance.dart';
 import 'remote_crypto.dart';
 import 'spiceapi/spiceapi.dart';
@@ -86,10 +88,8 @@ class ApiService {
       );
     }
 
-    final payload = {
-      'action': 'SET_CARD_V2',
-      'body': {'card': card.toJson()},
-    };
+    final capabilities = await _getRemoteCapabilities(instance);
+    final payload = _buildRemotePayload(card, capabilities);
     late final Map<String, dynamic> requestPayload;
     if (instance.password.isEmpty) {
       requestPayload = payload;
@@ -121,6 +121,73 @@ class ApiService {
       success: false,
       errorMessage: 'Server returned ${response.statusCode}',
     );
+  }
+
+  Future<RemoteCapabilities> _getRemoteCapabilities(
+    RemoteInstance instance,
+  ) async {
+    final endpoint = _capabilitiesUri(instance.url);
+    final response = await _httpClient
+        .get(endpoint)
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = jsonDecode(response.body);
+      final capabilities = RemoteCapabilities.fromResponseJson(decoded);
+      log(
+        'Remote DLL capabilities: protocol=${capabilities.cardProtocol}, '
+        'version=${capabilities.clientVersion}',
+      );
+      return capabilities;
+    }
+
+    final body = response.body.toLowerCase();
+    if (body.contains('no active client connected')) {
+      throw const FormatException('No remote DLL is connected');
+    }
+
+    // Older relay deployments do not expose /capabilities. Use the legacy
+    // Banapass field set as the compatibility fallback instead of failing
+    // before the card is sent.
+    if (response.statusCode == 404 || response.statusCode == 405) {
+      log(
+        'Remote capabilities endpoint is unavailable '
+        '(HTTP ${response.statusCode}); using legacy Banapass fields',
+      );
+      return const RemoteCapabilities.legacy();
+    }
+
+    throw FormatException(
+      'Remote DLL capability check failed: server returned ${response.statusCode}',
+    );
+  }
+
+  Uri _capabilitiesUri(String endpoint) {
+    final uri = Uri.parse(endpoint);
+    final path = uri.path.endsWith('/')
+        ? uri.path.substring(0, uri.path.length - 1)
+        : uri.path;
+    final capabilitiesPath = path.endsWith('/capabilities')
+        ? path
+        : '${path.isEmpty ? '' : path}/capabilities';
+    return uri.replace(
+      path: capabilitiesPath.isEmpty ? '/capabilities' : capabilitiesPath,
+    );
+  }
+
+  Map<String, dynamic> _buildRemotePayload(
+    ICCard card,
+    RemoteCapabilities capabilities,
+  ) {
+    final cardPayload = card is Banapass
+        ? card.toRemoteJson(
+            includeCanonicalFields: capabilities.supportsCanonicalBanapass,
+          )
+        : card.toJson();
+    return <String, dynamic>{
+      'action': 'SET_CARD_V2',
+      'body': {'card': cardPayload},
+    };
   }
 
   Future<ApiServiceResult> _sendSpiceApiCardData({

@@ -95,6 +95,15 @@ class ICCard {
 
   /// Reconstruct from flat type + value strings (e.g. from [ScanLog]).
   static ICCard fromTypeAndValue(String type, String value) {
+    if (type == 'banapass' && RegExp(r'^\d{20}$').hasMatch(value)) {
+      return Banapass.fromAccessCode(
+        Uint8List(0),
+        0x08,
+        0x0400,
+        accessCode: value,
+        dualKey: true,
+      );
+    }
     return fromJson({
       'type': type,
       'id': type == 'iso15693' ? value : '',
