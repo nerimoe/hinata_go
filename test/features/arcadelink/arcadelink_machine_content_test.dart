@@ -1,0 +1,159 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hinata_go/features/arcadelink/arcadelink_machine_content.dart';
+import 'package:hinata_go/services/arcadelink_api.dart';
+
+const session = ArcadeLinkMachineSession(
+  ticket: 'test',
+  expiresIn: 300,
+  machine: ArcadeLinkMachine(publicId: 'test', name: '舞萌 DX', shopName: '月宫'),
+);
+const card = ArcadeLinkCard(
+  id: '1',
+  label: '一张名称比较长的测试卡片',
+  accessCode: '12345678901234567890',
+  disabledAt: null,
+);
+
+Widget content({
+  bool auth = false,
+  bool busy = false,
+  bool browserOnly = false,
+  bool passkey = false,
+  String passkeyLabel = '使用 Passkey 登录',
+  bool success = false,
+  List<ArcadeLinkCard> cards = const [],
+  ValueChanged<ArcadeLinkCard>? onLogin,
+}) => ArcadeLinkMachineContent(
+  session: session,
+  cards: cards,
+  authRequired: auth,
+  authenticating: false,
+  passkeyAuthenticating: false,
+  loggingIn: busy,
+  activeCardId: busy ? '1' : null,
+  success: success,
+  webAuthStarted: false,
+  error: null,
+  browserOnly: browserOnly,
+  passkeyAvailable: passkey,
+  passkeyActionLabel: passkeyLabel,
+  onAuthenticate: () {},
+  onAuthenticatePasskey: () {},
+  onReloadCards: () {},
+  onLogin: onLogin ?? (_) {},
+  onContinue: () {},
+);
+
+Future<void> show(
+  WidgetTester tester,
+  Widget child, {
+  double scale = 1,
+  Brightness brightness = Brightness.light,
+}) async {
+  tester.view.physicalSize = const Size(320, 640);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: brightness,
+        ),
+      ),
+      home: MediaQuery(
+        data: MediaQueryData(
+          size: const Size(320, 640),
+          textScaler: TextScaler.linear(scale),
+        ),
+        child: Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: child,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+void main() {
+  testWidgets('native platforms expose Passkey before web fallback', (
+    tester,
+  ) async {
+    await show(tester, content(auth: true, passkey: true));
+    expect(find.text('使用 Passkey 登录'), findsOneWidget);
+    expect(find.text('打开网页登录'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('signed-out state has one large primary action and no error', (
+    tester,
+  ) async {
+    await show(tester, content(auth: true));
+    expect(find.text('请先登录'), findsNothing);
+    expect(find.text('使用 MuNET 登录'), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(FilledButton)).height,
+      greaterThanOrEqualTo(56),
+    );
+    expect(find.text('打开网页版'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'large text and long card name fit narrow screen; full row is tappable',
+    (tester) async {
+      var tapped = 0;
+      await show(
+        tester,
+        content(cards: [card], onLogin: (_) => tapped++),
+        scale: 2,
+      );
+      await tester.ensureVisible(find.text('登录'));
+      await tester.tap(find.text(card.label));
+      expect(tapped, 1);
+      expect(find.text('尾号 7890'), findsOneWidget);
+      expect(find.text(card.accessCode), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('pending login disables all card actions', (tester) async {
+    var tapped = 0;
+    await show(
+      tester,
+      content(cards: [card], busy: true, onLogin: (_) => tapped++),
+    );
+    await tester.ensureVisible(find.text('正在登录...'));
+    await tester.tap(find.text(card.label));
+    expect(tapped, 0);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets(
+    'browser-only platforms do not pretend the account has no cards',
+    (tester) async {
+      await show(
+        tester,
+        content(browserOnly: true),
+        brightness: Brightness.dark,
+      );
+      expect(find.text('继续登录'), findsOneWidget);
+      expect(find.text('还没有添加卡片'), findsNothing);
+      expect(find.text('打开网页版'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('successful session does not expose an expired login action', (
+    tester,
+  ) async {
+    await show(tester, content(success: true, cards: [card]));
+    expect(find.text('已登录'), findsOneWidget);
+    expect(find.text('打开网页版'), findsNothing);
+    expect(find.text('登录'), findsNothing);
+  });
+}

@@ -7,7 +7,18 @@ class ArcadeLinkNativeService {
   static const _channel = MethodChannel('moe.neri.hinatago/arcadelink_native');
 
   static bool get isAvailable =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
+  static bool get supportsNativePasskey => isAvailable;
+
+  static bool get supportsNativeMunet =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  Future<void> authenticateWithPasskey() async {
+    await _channel.invokeMethod<void>('authenticatePasskey');
+  }
 
   Future<void> authenticateWithMunet() async {
     await _channel.invokeMethod<void>('authenticateMunet');

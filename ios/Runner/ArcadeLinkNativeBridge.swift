@@ -6,6 +6,7 @@ final class ArcadeLinkNativeBridge {
   static let shared = ArcadeLinkNativeBridge()
 
   private let munet = MunetAuthenticationService()
+  private let passkey = PasskeyAuthenticationService()
   private let location = LocationService()
   private var channel: FlutterMethodChannel?
 
@@ -31,6 +32,11 @@ final class ArcadeLinkNativeBridge {
       case "authenticateMunet":
         let code = try await munet.authenticate()
         try await ArcadeLinkAPI.shared.exchangeAppClipAuth(code: code)
+        result(nil)
+      case "authenticatePasskey":
+        let options = try await ArcadeLinkAPI.shared.passkeyOptions()
+        let assertion = try await passkey.authenticate(options: options)
+        try await ArcadeLinkAPI.shared.loginWithPasskey(assertion)
         result(nil)
       case "cards":
         let cards = try await ArcadeLinkAPI.shared.cards().cards

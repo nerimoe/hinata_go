@@ -13,6 +13,7 @@ import io.flutter.plugin.common.MethodChannel
 import android.util.Log
 
 class MainActivity : FlutterActivity() {
+    private var arcadeLinkBridge: ArcadeLinkNativeBridge? = null
     private var pendingTag: Tag? = null
     private val nfcChannel = "moe.neri.hinatago/nfc_launcher"
     private val appUpdateChannel = "moe.neri.hinatago/app_update"
@@ -20,6 +21,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        arcadeLinkBridge = ArcadeLinkNativeBridge(this).also {
+            it.attach(flutterEngine.dartExecutor.binaryMessenger)
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, nfcChannel).setMethodCallHandler { call, result ->
             if (call.method == "getInitialTag") {
                 pendingTag?.let {
@@ -58,6 +62,22 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleNfcIntent(intent)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        if (arcadeLinkBridge?.handlePermissionResult(requestCode, grantResults) != true) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+
+    override fun onDestroy() {
+        arcadeLinkBridge?.dispose()
+        arcadeLinkBridge = null
+        super.onDestroy()
     }
 
     private fun handleNfcIntent(intent: Intent) {
