@@ -992,10 +992,10 @@ abstract class AppLocalizations {
   /// **'This will overwrite your local data irrecoverably. Are you sure?'**
   String get confirmOverwriteMessage;
 
-  /// Validation rule for Aime codes
+  /// Validation rule for Aime and Banapass codes
   ///
   /// In en, this message translates to:
-  /// **'Access code must be 20 digits and not start with 3'**
+  /// **'Enter a valid 20-digit Aime or Banapass access code'**
   String get invalidAccessCodeLength;
 
   /// Title for hardware management

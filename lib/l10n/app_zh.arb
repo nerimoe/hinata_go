@@ -705,7 +705,7 @@
   "@confirmOverwriteMessage": {
     "description": "危险操作警告"
   },
-  "invalidAccessCodeLength": "访问代码必须为 20 位数字且不能以 3 开头",
+  "invalidAccessCodeLength": "请输入有效的 20 位 Aime 或 Banapass 访问代码",
   "@invalidAccessCodeLength": {
     "description": "Aime 代码校验规则"
   },

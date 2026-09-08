@@ -707,7 +707,7 @@
   "@confirmOverwriteMessage": {
     "description": "Warning message for data loss"
   },
-  "invalidAccessCodeLength": "Access code must be 20 digits and not start with 3",
+  "invalidAccessCodeLength": "Enter a valid 20-digit Aime or Banapass access code",
   "@invalidAccessCodeLength": {
     "description": "Validation rule for Aime codes"
   },

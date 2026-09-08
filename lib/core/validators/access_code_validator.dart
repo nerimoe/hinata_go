@@ -1,3 +1,5 @@
+import 'package:cardcipher/bana.dart';
+
 class AccessCodeValidator {
   static const int accessCodeLength = 20;
   static const String banapassPrefix = '3';
@@ -23,5 +25,10 @@ class AccessCodeValidator {
   static bool isValidDecodedBanapassAccessCode(String? accessCode) {
     return isTwentyDigitAccessCode(accessCode) &&
         startsWithBanapassPrefix(accessCode);
+  }
+
+  static bool isValidBanapassAccessCode(String? accessCode) {
+    return isValidDecodedBanapassAccessCode(accessCode) &&
+        BanapassCipher.decodeAccessCode(accessCode!) != null;
   }
 }

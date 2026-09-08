@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:uuid/uuid.dart';
 import '../../../models/card/aime.dart';
+import '../../../models/card/banapass.dart';
 import '../../../models/card/card.dart';
 import '../../../models/card/saved_card.dart';
 import '../../../providers/app_state_provider.dart';
@@ -36,29 +37,41 @@ class AddCardDialog extends HookConsumerWidget {
       () => valueController.text.trim(),
     );
 
-    final isFormValid =
-        name.isNotEmpty && AccessCodeValidator.isValidAimeAccessCode(value);
+    final isBanapass = AccessCodeValidator.startsWithBanapassPrefix(value);
+    final isCodeValid = isBanapass
+        ? AccessCodeValidator.isValidBanapassAccessCode(value)
+        : AccessCodeValidator.isValidAimeAccessCode(value);
+    final isFormValid = name.isNotEmpty && isCodeValid;
 
     Future<void> onSave() async {
       if (!isFormValid) return;
 
       final accessCodeBytes = ICCard.hexToBytes(value);
-      final aime = Aime(
-        Uint8List(4),
-        0x08,
-        0x0004,
-        accessCodeBytes,
-        tags: const [CardTag.aime, CardTag.mifareClassic],
-      );
+      final card = isBanapass
+          ? Banapass.fromAccessCode(
+              Uint8List(0),
+              0x08,
+              0x0400,
+              accessCode: value,
+              dualKey: true,
+              tags: const [CardTag.banapass, CardTag.mifareClassic],
+            )
+          : Aime(
+              Uint8List(4),
+              0x08,
+              0x0004,
+              accessCodeBytes,
+              tags: const [CardTag.aime, CardTag.mifareClassic],
+            );
       final notifier = ref.read(savedCardsProvider.notifier);
       final folderId = selectedFolderIdState.value;
 
-      final duplicate = notifier.findDuplicate(aime, name, folderId);
+      final duplicate = notifier.findDuplicate(card, name, folderId);
 
       final newCard = SavedCard(
         id: const Uuid().v4(),
         name: name,
-        card: aime,
+        card: card,
         folderId: folderId,
         source: 'Direct',
       );
@@ -150,8 +163,7 @@ class AddCardDialog extends HookConsumerWidget {
               decoration: InputDecoration(
                 labelText: l10n.accessCode,
                 helperText:
-                    value.isNotEmpty &&
-                        !AccessCodeValidator.isValidAimeAccessCode(value)
+                    value.isNotEmpty && !isCodeValid
                     ? l10n.invalidAccessCodeLength
                     : null,
                 helperMaxLines: 3,

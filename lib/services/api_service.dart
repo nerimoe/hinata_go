@@ -88,7 +88,9 @@ class ApiService {
       );
     }
 
-    final capabilities = await _getRemoteCapabilities(instance);
+    final capabilities = card is Banapass
+        ? await _getRemoteCapabilities(instance)
+        : const RemoteCapabilities.legacy();
     final payload = _buildRemotePayload(card, capabilities);
     late final Map<String, dynamic> requestPayload;
     if (instance.password.isEmpty) {
@@ -135,8 +137,7 @@ class ApiService {
       final decoded = jsonDecode(response.body);
       final capabilities = RemoteCapabilities.fromResponseJson(decoded);
       log(
-        'Remote DLL capabilities: protocol=${capabilities.cardProtocol}, '
-        'version=${capabilities.clientVersion}',
+        'Remote DLL capabilities: version=${capabilities.clientVersion}',
       );
       return capabilities;
     }

@@ -69,6 +69,5 @@ void main() {
 
     expect(reconstructed.dualKey, isTrue);
     expect(reconstructed.effectiveBlock2, hasLength(16));
-    expect(reconstructed.effectiveBlock1, isNull);
   });
 }

@@ -499,7 +499,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get confirmOverwriteMessage => '这将不可恢复地覆盖您的本地数据。您确定吗？';
 
   @override
-  String get invalidAccessCodeLength => '访问代码必须为 20 位数字且不能以 3 开头';
+  String get invalidAccessCodeLength => '请输入有效的 20 位 Aime 或 Banapass 访问代码';
 
   @override
   String get hardwareDevice => '设备';

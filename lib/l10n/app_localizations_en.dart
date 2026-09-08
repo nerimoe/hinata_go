@@ -509,7 +509,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidAccessCodeLength =>
-      'Access code must be 20 digits and not start with 3';
+      'Enter a valid 20-digit Aime or Banapass access code';
 
   @override
   String get hardwareDevice => 'Device';

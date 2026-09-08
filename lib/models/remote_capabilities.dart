@@ -1,15 +1,9 @@
 /// Capabilities advertised by a connected remote AimeIO DLL.
 class RemoteCapabilities {
-  const RemoteCapabilities({
-    required this.cardProtocol,
-    required this.clientVersion,
-  });
+  const RemoteCapabilities({required this.clientVersion});
 
-  const RemoteCapabilities.legacy()
-    : cardProtocol = 1,
-      clientVersion = 'legacy';
+  const RemoteCapabilities.legacy() : clientVersion = 'legacy';
 
-  final int cardProtocol;
   final String clientVersion;
 
   /// Canonical Banapass fields are understood by the DLL released with the
@@ -38,16 +32,9 @@ class RemoteCapabilities {
   }
 
   factory RemoteCapabilities.fromJson(Map<String, dynamic> json) {
-    final rawProtocol = json['cardProtocol'] ?? json['card_protocol'];
-    final protocol = switch (rawProtocol) {
-      num value => value.toInt(),
-      String value => int.tryParse(value),
-      _ => null,
-    };
     final rawVersion = json['clientVersion'] ?? json['client_version'];
 
     return RemoteCapabilities(
-      cardProtocol: protocol ?? 1,
       clientVersion: rawVersion is String && rawVersion.isNotEmpty
           ? rawVersion
           : 'legacy',
@@ -75,17 +62,12 @@ class RemoteCapabilities {
       throw const FormatException('Invalid remote capabilities response');
     }
 
-    var lowestProtocol = agents.first.cardProtocol;
     final versions = <String>{};
     for (final agent in agents) {
-      if (agent.cardProtocol < lowestProtocol) {
-        lowestProtocol = agent.cardProtocol;
-      }
       versions.add(agent.clientVersion);
     }
 
     return RemoteCapabilities(
-      cardProtocol: lowestProtocol,
       clientVersion: versions.length == 1 ? versions.first : 'multiple',
     );
   }
