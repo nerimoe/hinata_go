@@ -1,24 +1,33 @@
 import Foundation
 
+struct ArcadeLinkInvocation {
+  let shopId: String
+  let machinePublicId: String
+}
+
 enum InvocationParser {
   static let host = "link.neri.moe"
 
-  static func machinePublicId(from url: URL) -> String? {
+  static func invocation(from url: URL) -> ArcadeLinkInvocation? {
     guard url.scheme?.lowercased() == "https",
           url.host?.lowercased() == host else {
       return nil
     }
 
     let components = url.path.split(separator: "/", omittingEmptySubsequences: true)
-    guard components.count == 2, components[0] == "t" else {
+    guard components.count == 3, components[0] == "t" else {
       return nil
     }
 
-    let value = String(components[1]).removingPercentEncoding ?? String(components[1])
-    guard !value.isEmpty, value.count <= 80,
-          value.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }) else {
+    let values = components.dropFirst().map {
+      String($0).removingPercentEncoding ?? String($0)
+    }
+    guard values.allSatisfy({ value in
+      !value.isEmpty && value.count <= 80 &&
+        value.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" })
+    }) else {
       return nil
     }
-    return value
+    return ArcadeLinkInvocation(shopId: values[0], machinePublicId: values[1])
   }
 }

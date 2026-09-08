@@ -31,9 +31,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/scan',
     refreshListenable: invocationService,
     redirect: (context, state) {
+      final shopId = invocationService.pendingShopId;
       final publicId = invocationService.pendingPublicId;
-      if (publicId == null) return null;
-      final target = '/arcadelink/${Uri.encodeComponent(publicId)}';
+      if (shopId == null || publicId == null) return null;
+      final target =
+          '/arcadelink/${Uri.encodeComponent(shopId)}/${Uri.encodeComponent(publicId)}';
       return state.uri.path == target ? null : target;
     },
     routes: [
@@ -121,10 +123,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/arcadelink/:publicId',
+        path: '/arcadelink/:shopId/:publicId',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => ArcadeLinkMachineLoginPage(
-          key: ValueKey(state.pathParameters['publicId']),
+          key: ValueKey(
+            '${state.pathParameters['shopId']}/${state.pathParameters['publicId']}',
+          ),
+          shopId: state.pathParameters['shopId']!,
           publicId: state.pathParameters['publicId']!,
         ),
       ),

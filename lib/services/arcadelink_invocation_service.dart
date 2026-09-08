@@ -10,9 +10,11 @@ class ArcadeLinkInvocationService extends ChangeNotifier {
 
   static const _channel = MethodChannel('moe.neri.hinatago/arcadelink');
 
+  String? _pendingShopId;
   String? _pendingPublicId;
   bool _initialized = false;
 
+  String? get pendingShopId => _pendingShopId;
   String? get pendingPublicId => _pendingPublicId;
 
   void initialize() {
@@ -29,18 +31,26 @@ class ArcadeLinkInvocationService extends ChangeNotifier {
     final uri = Uri.tryParse(value);
     if (uri == null || uri.scheme.toLowerCase() != 'https') return;
     if (uri.host.toLowerCase() != 'link.neri.moe') return;
-    if (uri.pathSegments.length != 2 || uri.pathSegments.first != 't') {
+    if (uri.pathSegments.length != 3 || uri.pathSegments.first != 't') {
       return;
     }
 
-    final publicId = uri.pathSegments.last;
-    if (publicId.isEmpty || publicId.length > 80) return;
+    final shopId = uri.pathSegments[1];
+    final publicId = uri.pathSegments[2];
+    if (shopId.isEmpty ||
+        shopId.length > 80 ||
+        publicId.isEmpty ||
+        publicId.length > 80) {
+      return;
+    }
+    _pendingShopId = shopId;
     _pendingPublicId = publicId;
     notifyListeners();
   }
 
   void clear() {
-    if (_pendingPublicId == null) return;
+    if (_pendingShopId == null && _pendingPublicId == null) return;
+    _pendingShopId = null;
     _pendingPublicId = null;
     notifyListeners();
   }

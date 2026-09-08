@@ -32,9 +32,9 @@ final class ArcadeLinkAPI {
     session = URLSession(configuration: configuration)
   }
 
-  func startMachineSession(publicId: String) async throws -> MachineSessionResponse {
+  func startMachineSession(shopId: String, publicId: String) async throws -> MachineSessionResponse {
     var request = try makeRequest(path: "/api/machines/session/start", method: "POST")
-    request.httpBody = try encoder.encode(["publicId": publicId])
+    request.httpBody = try encoder.encode(["shopId": shopId, "publicId": publicId])
     return try await send(request)
   }
 

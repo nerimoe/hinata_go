@@ -10,8 +10,13 @@ import '../../services/arcadelink_native_service.dart';
 import 'arcadelink_machine_content.dart';
 
 class ArcadeLinkMachineLoginPage extends ConsumerStatefulWidget {
-  const ArcadeLinkMachineLoginPage({required this.publicId, super.key});
+  const ArcadeLinkMachineLoginPage({
+    required this.shopId,
+    required this.publicId,
+    super.key,
+  });
 
+  final String shopId;
   final String publicId;
 
   @override
@@ -52,6 +57,7 @@ class _ArcadeLinkMachineLoginPageState
   }
 
   Future<void> _loadMachine() async {
+    final shopId = widget.shopId;
     final publicId = widget.publicId;
     setState(() {
       _loading = true;
@@ -63,8 +69,13 @@ class _ArcadeLinkMachineLoginPageState
       _webAuthStarted = false;
     });
     try {
-      final session = await _api.startMachineSession(publicId);
-      if (!mounted || publicId != widget.publicId) return;
+      final session = await _api.startMachineSession(
+        shopId: shopId,
+        publicId: publicId,
+      );
+      if (!mounted || shopId != widget.shopId || publicId != widget.publicId) {
+        return;
+      }
       setState(() {
         _session = session;
         _loading = false;
@@ -146,7 +157,7 @@ class _ArcadeLinkMachineLoginPageState
       });
       try {
         final launched = await launchUrl(
-          _api.munetLoginURL(widget.publicId),
+          _api.munetLoginURL(widget.shopId, widget.publicId),
           mode: LaunchMode.externalApplication,
         );
         if (!mounted) return;

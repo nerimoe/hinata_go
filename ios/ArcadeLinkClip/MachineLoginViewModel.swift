@@ -19,6 +19,7 @@ final class MachineLoginViewModel: ObservableObject {
   @Published private(set) var cards: [ArcadeCard] = []
   @Published private(set) var errorMessage: String?
   @Published private(set) var ticket: String?
+  @Published private(set) var shopId: String?
   @Published private(set) var publicId: String?
 
   let api: ArcadeLinkAPI
@@ -36,20 +37,21 @@ final class MachineLoginViewModel: ObservableObject {
   }
 
   func handleInvocation(_ url: URL) async {
-    guard let publicId = InvocationParser.machinePublicId(from: url) else {
+    guard let invocation = InvocationParser.invocation(from: url) else {
       state = .failed
       errorMessage = "无效的机台地址"
       return
     }
-    await start(publicId: publicId)
+    await start(shopId: invocation.shopId, publicId: invocation.machinePublicId)
   }
 
-  func start(publicId: String) async {
+  func start(shopId: String, publicId: String) async {
+    self.shopId = shopId
     self.publicId = publicId
     state = .loadingMachine
     errorMessage = nil
     do {
-      let session = try await api.startMachineSession(publicId: publicId)
+      let session = try await api.startMachineSession(shopId: shopId, publicId: publicId)
       ticket = session.ticket
       machine = session.machine
       let me = try await api.me()
