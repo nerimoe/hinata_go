@@ -14,7 +14,7 @@ class RecordingClient extends http.BaseClient {
   RecordingClient({
     this.capabilities = const {
       'agents': [
-        {'cardProtocol': 2, 'clientVersion': '1.1.1'},
+        {'cardProtocol': 2, 'clientVersion': '1.1.3'},
       ],
     },
   });
@@ -76,7 +76,7 @@ void main() {
       final client = RecordingClient(
         capabilities: const {
           'agents': [
-            {'cardProtocol': 2, 'clientVersion': '1.1.0'},
+            {'cardProtocol': 2, 'clientVersion': '1.1.2'},
           ],
         },
       );
@@ -175,7 +175,7 @@ void main() {
     final client = RecordingClient(
       capabilities: const {
         'agents': [
-          {'cardProtocol': 2, 'clientVersion': '1.1.1'},
+          {'cardProtocol': 2, 'clientVersion': '1.1.3'},
         ],
       },
     );

@@ -13,8 +13,8 @@ class RemoteCapabilities {
   final String clientVersion;
 
   /// Canonical Banapass fields are understood by the DLL released with the
-  /// 1.1.1 structured-card model. Older DLLs still require block fields.
-  bool get supportsCanonicalBanapass => _versionIsAtLeast(1, 1, 1);
+  /// 1.1.3 structured-card model. Older DLLs still require block fields.
+  bool get supportsCanonicalBanapass => _versionIsAtLeast(1, 1, 3);
 
   bool _versionIsAtLeast(int major, int minor, int patch) {
     final normalized = clientVersion.trim().replaceFirst(RegExp(r'^[vV]'), '');
